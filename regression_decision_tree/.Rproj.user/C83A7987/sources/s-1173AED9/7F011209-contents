@@ -1,0 +1,124 @@
+---
+title: "Untitled"
+author: "Jack Wright"
+date: "11/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Dependent variable
+**Check: is.timeSeries(Y)**:
+ACF test: 
+
+Y=dependent variable
+
+lag.max= depth of the autocorrelation test
+
+plot : do you want a plot output
+
+```{r}
+stats::acf(Y,lag.max=17,plot=TRUE)
+```
+
+
+**IF is.timeSeries(Y)==FALSE:**
+
+
+continuous:
+-response is continuous or count data that can be modeled with a normal distribution
+
+Logistic:
+-response is binary (1 or 0)
+
+
+
+Count:
+-count is bounded, or has a low probability of success
+normal linear model used
+
+*(|Count)*:
+
+`P(success=SMALL)`:
+-Poisson regression w/ log link
+`total count=HIGH`:
+-Poisson regression
+`count=level of a given category`:
+-multinomial response model | categorical data analysis
+`ELSE:`
+-binomial regression
+
+
+
+**NEED TO FIGURE OUT WHEN TO PUT IN SUBSETS OF THE TYPES OF THESE REGRESSIONS**
+
+
+
+#Independent variables
+
+*(|continous dependent)*:
+
+
+`count(predictor)==1`:
+-simple regression
+
+`count(predictor)>1`:
+-multinomial regression
+
+*(|Logistic dependent)*:
+
+m=number of trials in an observation:
+
+` m>5:`
+-Logistic regression
+
+
+`m<5`:
+-binary logistic regression
+  -most common, each observation ?is a single bernoulli trial?
+  
+*(|Count)*:
+
+PUT RESTRICTIONS ON INDEPENDENT VARIABLES HERE (not sure if there are any)
+
+
+DO YOU WANT:
+
+hypothesis testing
+
+Dan notes:
+
+iterative process, flow chart
+
+start tree up close, then zoom out
+
+## Model Building Strategy
+
+*(|simple regression)*:
+
+
+EDA:
+
+1. MISSING DATA
+
+`base::summary(data)`
+
+-check for NA, (see *missing data*)
+
+2. CORRELATION 
+
+`GGallly::ggpairs(data)`
+or
+`corrplot::corrplot(base::cor(data))`
+
+
+-visually check for correlations
+
+3. TRANSFORMATION TESTS
+
+
+
+
+

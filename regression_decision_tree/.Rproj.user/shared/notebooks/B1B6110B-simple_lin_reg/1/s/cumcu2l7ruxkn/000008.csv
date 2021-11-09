@@ -1,0 +1,4 @@
+"0","x<-seq(1,20)"
+"0","y<-1+2*log(x)"
+"0","df_log<-data.frame(x,y)"
+"0","ggplot(df_log,aes(x=x,y=y))+geom_point()"

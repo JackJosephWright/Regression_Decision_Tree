@@ -1,0 +1,13 @@
+---
+title: "simple_linear_program_tree"
+author: "Jack Wright"
+date: "11/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Requirements for simple linear regression
+

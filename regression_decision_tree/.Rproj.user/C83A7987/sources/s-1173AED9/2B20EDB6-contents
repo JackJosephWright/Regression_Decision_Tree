@@ -1,0 +1,147 @@
+---
+title: "simple linear regression flowchart"
+author: "Jack Wright"
+date: "11/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+## Requirements for simple linear regression
+
+`n(response==1)`
+`n(predictor==1)`
+
+`respone!=binary`
+`respone!=factor`
+
+`if (response==count)`{
+`hist(respone)=approx_normal`
+}
+
+## Exploratory Data Analysis
+
+FUNCTIONS:
+
+GGally::ggpairs(data)
+-check correlation
+
+corrplot::corrplot(cor(data))
+
+## Patterns to look for
+
+### exponential model
+
+```{r}
+x<-seq(1,20)
+y<-exp(-1+x)
+df_exp<-data.frame(x,y)
+ggplot(df_exp,aes(x=x,y=y))+geom_point()
+```
+Take the log of the response
+
+### quadratic
+
+```{r}
+x<-seq(1,20)
+y<-1+x^2
+df_quad<-data.frame(x,y)
+ggplot(df_quad,aes(x=x,y=y))+geom_point()
+```
+take sqrt of response
+
+## Reciprocal model
+
+```{r}
+x<-seq(1,20)
+y<-1/(1+x)
+df_recip<-data.frame(x,y)
+ggplot(df_recip,aes(x=x,y=y))+geom_point()
+```
+take reciprocal of response
+
+## Logarithmic model
+
+```{r}
+x<-seq(1,20)
+y<-1+2*log(x)
+df_log<-data.frame(x,y)
+ggplot(df_log,aes(x=x,y=y))+geom_point()
+```
+
+take log of predictor
+
+## Power Model
+THIS ISNT RIGHT
+
+```{r}
+
+a<-seq(1,100)
+x<-log(a)
+y=log(x)
+df_power<-data.frame(x,y)
+ggplot(df_power,aes(x,exp(log(y))))+geom_point()
+
+```
+
+
+take log of both predictor and response
+## Build model list
+
+```{r}
+model_list<-list()
+```
+
+
+```{r}
+x<-seq(1,20)
+y<-x^2
+y_error<-50*runif(20)*sample(-1:1,20,replace = TRUE)
+y<-y+y_error
+
+df_exp<-data.frame(x,y)
+ggplot(df_exp,aes(x=x,y=y))+geom_point()
+```
+
+
+```{r}
+model_list[['base']]<-lm(y~x,data=df_exp)
+summary(model_list[['base']])
+
+
+```
+
+
+### Examine residuals
+
+```{r}
+resid_panel(model_list[['base']])
+```
+
+
+
+## use powertransform to get the optimal power to raise the response to, and run model again
+
+
+```{r}
+p1<-powerTransform(model_list[['base']])
+
+model_list[['transform']]<-lm(y^p1$lambda~x,data = df_exp)
+
+
+```
+
+
+## Comparing models
+
+```{r}
+#function for looking at adjusted r squared values
+lapply(model_list, function(f) list(adj.r.squared=summary(f)$adj.r.squared,other=2))
+
+
+```
+
