@@ -1,0 +1,65 @@
+---
+title: "linear_weighted_least_squares|variance across predictor"
+author: "Jack Wright"
+date: "11/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Requirements for weighted least squares regression
+
+`response`= mean across level of `predictor` 
+
+`sd(response_i|predictor_i)=TRUE`
+
+OR `heteroscedasticity_test(simple_lin_reg)=FAIL`
+
+
+`response`= mean across level of `predictor` 
+
+`sd(response_i|predictor_i)=TRUE`
+
+
+## Build model list
+
+```{r}
+clean<-read.table(here('data','cleaningwtd.txt'),header=TRUE)
+m.list[['wls_no_weight']]<-lm(Rooms~Crews,data=clean)
+summary(m.list[['wls_no_weight']])
+```
+
+
+
+## Check for heteroscedasticity
+
+```{r}
+library(lmtest)
+lmtest::bptest(m.list[['wls_no_weight']])
+
+```
+
+H_0: homoscedasitcity is present (residuals are distributed with equal variance)
+
+H_A: heteroscedasticity is present (residuals are not distributed with equal variance)
+
+if `lmtest::bptest(model)==H_A` perform Weighted least squares
+
+```{r}
+m.list[['wls']]<-lm(Rooms~Crews,weights=1/StdDev^2,data=clean)
+
+summary(m.list[['wls']])
+```
+
+
+
+## Compare fits
+
+```{r}
+library(GGally)
+
+ggplot(clean, aes(x=Crews,y=Rooms))+geom_point()+geom_abline(aes(intercept=m.list[['wls']]$coefficients[[1]],slope=m.list[['wls']]$coefficients[[2]],color='wls'))+geom_abline(aes(intercept=m.list[['wls_no_weight']]$coefficients[[1]],slope=m.list[['wls']]$coefficients[[2]],color='unweighted'))
+```
+

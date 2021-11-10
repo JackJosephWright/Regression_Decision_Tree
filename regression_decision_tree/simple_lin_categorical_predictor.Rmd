@@ -1,0 +1,76 @@
+---
+title: "simple_lin_categorical_predictor"
+author: "Jack Wright"
+date: "11/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Categorical Variables
+
+also called **factor** or **qualitative variables**
+
+limited number of values, or levels
+
+```{r}
+library(car)
+Salaries<-Salaries
+```
+
+categorical variable with `n` levels will be transformed into n-1 variables each with 2 levels.
+
+```{r}
+levels(Salaries$rank)
+```
+
+This 3 level variable will be recoded into 2 variables *AssocProf* and *Prof*
+
+-If rank = AssocProf, then the column AssocProf would be coded with a 1 and Prof with a 0.
+-If rank = Prof, then the column AssocProf would be coded with a 0 and Prof would be coded with a 1.
+-If rank = AsstProf, then both columns “AssocProf” and “Prof” would be coded with a 0.
+
+
+recoding this way creates a `contrast matrix`
+
+```{r}
+res<-model.matrix(~rank,data=Salaries)
+head(res)
+```
+
+
+
+## Make Model
+
+```{r}
+summary(model_anova)
+```
+
+## Interpretation
+
+There are 2 dummy variables, where the negative case is `AssistProf`
+
+
+
+
+Estimate is not a slope, but a  difference in group averages (AssistProf vs AssocProf and AssistProf vs Prof)
+
+
+## Goodness of fit tests
+
+the p-value is valid for this model
+
+the confidence intervals are valid for this model
+
+```{r}
+confint(model_anova)
+```
+
+
+```{r}
+resid_panel(model_anova)
+```
+

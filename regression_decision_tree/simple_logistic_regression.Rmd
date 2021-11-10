@@ -1,0 +1,168 @@
+---
+title: "simple_logistic_regression"
+author: "Jack Wright"
+date: "11/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## Simple Logistic Regression
+
+
+
+$m=n(observation~per~row)$
+
+Additional requirements for simple logistic regression
+
+`m!=1`
+  if `m==1`
+  USE *simple_binary_logistic_regression.Rmd*
+
+
+
+```{r}
+MichelinFood<-read.table(here('data','MichelinFood.txt'),header = TRUE)
+```
+
+
+Note:
+
+each row is has a count of m observations (`InMichelin`+`NotInMichelin`) for every `Food` score, therefore m=n(observations) and m!=1
+
+
+```{r}
+MichelinFood[6,]
+```
+
+## Build model
+
+
+```{r}
+glm.list=list()
+glm.list[['glm.base']]<-glm(formula = cbind(InMichelin,NotInMichelin)~Food, family = binomial, data=MichelinFood)
+
+summary(glm.list[['glm.base']])
+```
+## Interpretation
+
+odds of success equal to exponential of linear model with the coefficients given by the glm
+
+$$odds~of~success=e^{\beta_0+\beta_1x_i}$$
+
+
+## Examining Diagnostics
+
+In Logistic Regression, use Deviance in place of least squares
+
+The *hypothesis test* examining goodness of fit
+
+H_0: the model we created fits the data well
+
+H_A: the model does not fit the data well enough, and a better model is needed 
+
+```{r}
+deviance<-glm.list[["glm.base"]]$deviance
+#degrees of freedom
+df<-glm.list[["glm.base"]]$df.residual
+pchisq(deviance,df,lower.tail=FALSE)
+```
+
+Since the p-value is high, we *CANNOT* reject H_0, and our model appropriately models the data. 
+
+**RULE OF THUMB:** if the deviance is less than the degrees of freedom, then the model is probably good. 
+
+
+
+
+
+
+## R^2_dev for logistic regression
+
+The equivalent of R^2 for logistic regression is $R^2_{dev}$ which is based off of the deviance instead of the least squares. 
+
+```{r}
+library(modEvA)
+modEvA::Dsquared(glm.list[["glm.base"]])
+```
+
+## Marginal model plots
+
+visually asses how close our model fits the data
+
+blue line: 
+-superfit curve to the data
+
+red line:
+-our model's fit (it doesnt seem to work well for single predictors for some reason, need to look into this more)
+```{r}
+car::mmps(glm.list[["glm.base"]])
+```
+
+
+
+## Overdispersion
+
+if deviance is large
+
+MOST COMMON:
+
+wrong structural form of model
+-wrong predictors, wrong transformations, outliers skewing model
+
+OR
+
+Checks before relying on Overdispersion to explain large deviance
+
+1.
+
+sparseness
+-observations per row
+
+```{r}
+MichelinFood%>%mutate(Total=InMichelin+NotInMichelin)%>%select(Total)
+```
+low counts for some levels of Food could lead to sparseness. 
+
+2.
+
+check for outliers with `faraway::halfnorm`
+
+```{r}
+library(faraway)
+faraway::halfnorm(residuals(glm.list[["glm.base"]]))
+```
+
+observations that fall off the linear pattern are having a large impact on the model, this looks ok. 
+
+
+If these checks are met
+
+
+*estimate dispersion parameter*
+
+dispersion parameter= residuals^2/degrees_of_freedom
+```{r}
+(sigma2<-sum(residuals(glm.list[['glm.base']],type='pearson')^2)/glm.list[['glm.base']]$df.residual)
+```
+in this case, the dispersion is 1 (no dispersion)
+
+
+
+IF THERE IS DISPERIONS
+
+use dispersion parameter to scale up the estimates of the standard error:
+
+
+we can use the dispersion parameter to scale up the estimates of the standard error:
+
+-this will give a more accurate reading of the significance of the variables. 
+
+
+```{r}
+summary(glm.list[['glm.base']], dispersion=sigma2)
+```

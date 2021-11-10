@@ -1,0 +1,54 @@
+---
+title: "heteroscedasticity_FAIL"
+author: "Jack Wright"
+date: "11/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+if `lmtest::bptest(simple_lin_reg)==H_A`
+
+create *model weights*
+
+```{r}
+df <- data.frame(hours=c(1, 1, 2, 2, 2, 3, 4, 4, 4, 5, 5, 5, 6, 6, 7, 8),
+                 score=c(48, 78, 72, 70, 66, 92, 93, 75, 75, 80, 95, 97, 90, 96, 99, 99))
+```
+
+
+## create base model with no weights
+
+```{r}
+wls.list=list()
+wls.list[['model']] <- lm(score ~ hours, data = df)
+```
+
+
+define weights to use
+
+```{r}
+wt <- 1 / lm(abs(model$residuals) ~ model$fitted.values)$fitted.values^2
+```
+
+
+perform weighted least squares regresion
+
+```{r}
+wls.list[['wls.model']]  <- lm(score ~ hours, data = df, weights=wt)
+```
+
+
+
+Note changes in coefficient estimates, prioritizing predictor variables with lower variance
+
+```{r}
+
+lapply(X=wls.list,
+       FUN=function(x) paste('intercept:',round(x$coefficient[[1]],2),'slope:',round(x$coefficient[[2]],2)))
+```
+

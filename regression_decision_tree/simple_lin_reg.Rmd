@@ -12,16 +12,41 @@ library(tidyverse)
 
 
 ## Requirements for simple linear regression
+Response Requirements
+1.
 
 `n(response==1)`
-`n(predictor==1)`
+2.
+`response!=binary & response!=count`
+ IF `response==binary`
+ use *simple_logistic_regression.Rmd*
+ IF `response==count`
+ use *simple_count_regression.Rmd*
+3.
+  IF `response` is an average value at a level of `predictor`, and the standard devaition can be calculated, 
+      use *wls_given_variance.Rmd* 
 
-`respone!=binary`
-`respone!=factor`
+Predictor Requirements
+
+1.
+`n(predictor==1)`
+  IF 
+  `n(predictor!=1)` 
+   use *multivariate_regression.Rmd*
+2.
+`predictor!=factor & predictor!=binary`
+  IF 
+  `predictor==factor` 
+   use *simple_lin_categorical_predictor.Rmd*
+  IF
+  `predictor==binary`
+  use *simple_lin_dummy.Rmd*
+
 
 `if (response==count)`{
 `hist(respone)=approx_normal`
 }
+
 
 ## Exploratory Data Analysis
 
@@ -34,62 +59,9 @@ corrplot::corrplot(cor(data))
 
 ## Patterns to look for
 
-### exponential model
-
-```{r}
-x<-seq(1,20)
-y<-exp(-1+x)
-df_exp<-data.frame(x,y)
-ggplot(df_exp,aes(x=x,y=y))+geom_point()
-```
-Take the log of the response
-
-### quadratic
-
-```{r}
-x<-seq(1,20)
-y<-1+x^2
-df_quad<-data.frame(x,y)
-ggplot(df_quad,aes(x=x,y=y))+geom_point()
-```
-take sqrt of response
-
-## Reciprocal model
-
-```{r}
-x<-seq(1,20)
-y<-1/(1+x)
-df_recip<-data.frame(x,y)
-ggplot(df_recip,aes(x=x,y=y))+geom_point()
-```
-take reciprocal of response
-
-## Logarithmic model
-
-```{r}
-x<-seq(1,20)
-y<-1+2*log(x)
-df_log<-data.frame(x,y)
-ggplot(df_log,aes(x=x,y=y))+geom_point()
-```
-
-take log of predictor
-
-## Power Model
-THIS ISNT RIGHT
-
-```{r}
-
-a<-seq(1,100)
-x<-log(a)
-y=log(x)
-df_power<-data.frame(x,y)
-ggplot(df_power,aes(x,exp(log(y))))+geom_point()
-
-```
+see *common_transformation_patterns.Rmd*
 
 
-take log of both predictor and response
 ## Build model list
 
 ```{r}
@@ -103,7 +75,7 @@ y<-x^2
 y_error<-50*runif(20)*sample(-1:1,20,replace = TRUE)
 y<-y+y_error
 
-df_exp<-data.frame(x,y)
+df_exp<-data.frame(x,y)%>%mutate(y=ifelse(y<0,0,y))
 ggplot(df_exp,aes(x=x,y=y))+geom_point()
 ```
 
@@ -114,6 +86,19 @@ summary(model_list[['base']])
 
 
 ```
+
+## Check for heteroscedasticity
+
+```{r}
+library(lmtest)
+lmtest::bptest(model_list[['base']])
+```
+H_0: homoscedasitcity is present (residuals are distributed with equal variance)
+
+H_A: heteroscedasticity is present (residuals are not distributed with equal variance) USE *homoscedasticity_FAIL.Rmd*
+
+
+if `lmtest::bptest(model)==H_A` perform Weighted least squares
 
 
 ### Examine residuals
@@ -128,11 +113,13 @@ resid_panel(model_list[['base']])
 
 
 ```{r}
-p1<-powerTransform(model_list[['base']])
-
-model_list[['transform']]<-lm(y^p1$lambda~x,data = df_exp)
+(p1<-powerTransform(df_exp))
 
 
+model_list[['transform']]<-lm(y^p1$lambda[[2]]~x,data = df_exp)
+
+summary(model_list[['transform']])
+resid_panel(model_list[['transform']])
 ```
 
 
@@ -140,6 +127,6 @@ model_list[['transform']]<-lm(y^p1$lambda~x,data = df_exp)
 
 ```{r}
 #function for looking at adjusted r squared values
-lapply(model_list, function(f) list(adj.r.squared=summary(f)$adj.r.squared,other=2))
+lapply(model_list, function(f) list(adj.r.squared=summary(f)$adj.r.squared,beta_estimate=f$coefficient[[2]],confidence_interval=confint(f)))
 ```
 

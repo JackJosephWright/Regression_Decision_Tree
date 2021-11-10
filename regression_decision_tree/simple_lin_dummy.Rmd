@@ -1,0 +1,83 @@
+---
+title: "simple_linear_with_dummy_variable"
+author: "Jack Wright"
+date: "11/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Requirements for simple linear regression with dummy variable
+
+## response variable
+
+`is.continuous(dependent_variable)`
+
+## predictor variable
+
+`is.binary(predictor_variable)`
+
+```{r}
+library(tidyverse)
+library(here)
+library(AER)
+```
+CASchools$STR <- CASchools$students/CASchools$teachers 
+```{r}
+df<-CASchools
+df<-df%>%dplyr::mutate(STR=as.numeric(students)/as.numeric(teachers))
+df<-df%>%mutate(D=STR<20)%>%mutate(score=(read+math)/2)
+```
+
+```{r}
+library(car)
+car::powerTransform(df%>%select(c(score)))
+```
+
+## Estimate Dummy regression Model
+
+```{r}
+m.list<-list()
+m.list[['lm.dummy']]<-lm(score~D, data=df)
+m.list[['lm.d_transform']]<-lm(score^-.207~D, data=df)
+```
+
+
+
+## Examine Summary
+
+```{r}
+summary(m.list[['lm.dummy']])
+```
+
+```{r}
+lapply(X=m.list,
+       FUN = summary)
+```
+
+## Suggested Transformations
+
+none
+
+
+## Interpretation
+
+Estimate is not a slope, but a  difference in group averages (DTRUE vs DFALSE)
+## Check Vailidity of Model
+
+```{r}
+resid_panel(m.list[['lm.dummy']])
+```
+Since the predictor is binary, we are only looking at the QQ and the Density vs Residuals , and maybe the Cook's distance for leverage. 
+
+
+## Confidence interval 
+
+```{r}
+confint(m.list[['lm.dummy']])
+```
+
+
+Reject null hypothesis since 0 falls outside of the confidence interval

@@ -1,0 +1,69 @@
+---
+title: "common_transformation_patterns"
+author: "Jack Wright"
+date: "11/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Common trends in continuous data, and how to transform them 
+
+### exponential model
+
+```{r}
+x<-seq(1,20)
+y<-exp(-1+x)
+df_exp<-data.frame(x,y)
+ggplot(df_exp,aes(x=x,y=y))+geom_point()
+```
+Take the log of the response
+
+### quadratic
+
+```{r}
+x<-seq(1,20)
+y<-1+x^2
+df_quad<-data.frame(x,y)
+ggplot(df_quad,aes(x=x,y=y))+geom_point()
+```
+take sqrt of response
+
+## Reciprocal model
+
+```{r}
+x<-seq(1,20)
+y<-1/(1+x)
+df_recip<-data.frame(x,y)
+ggplot(df_recip,aes(x=x,y=y))+geom_point()
+```
+take reciprocal of response
+
+## Logarithmic model
+
+```{r}
+x<-seq(1,20)
+y<-1+2*log(x)
+df_log<-data.frame(x,y)
+ggplot(df_log,aes(x=x,y=y))+geom_point()
+```
+
+take log of predictor
+
+## Power Model
+THIS ISNT RIGHT
+
+```{r}
+
+a<-seq(1,100)
+x<-log(a)
+y=log(x)
+df_power<-data.frame(x,y)
+ggplot(df_power,aes(x,exp(log(y))))+geom_point()
+
+```
+
+
+take log of both predictor and response
