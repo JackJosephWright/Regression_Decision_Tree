@@ -1,0 +1,34 @@
+---
+title: "predictor_interaction"
+author: "Jack Wright"
+date: "11/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## predictor Interaction
+
+How the effect on the response variable of predictor_i depends on the value of predictor_j
+
+## cases of interaction
+
+1.
+
+interactions between 2 binary variables
+
+SEE *interact_bin_bin.Rmd*
+2.
+
+interactions between a binary and a continuous variable
+
+see *interact_bin_cont.Rmd*
+
+3.
+
+interaction between two continuous variables
+
+see *interact_cont_cont.Rmd*

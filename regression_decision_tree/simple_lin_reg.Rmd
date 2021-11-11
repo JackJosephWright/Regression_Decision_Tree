@@ -32,7 +32,7 @@ Predictor Requirements
 `n(predictor==1)`
   IF 
   `n(predictor!=1)` 
-   use *multivariate_regression.Rmd*
+   use *multivariate_lin_regression.Rmd*
 2.
 `predictor!=factor & predictor!=binary`
   IF 

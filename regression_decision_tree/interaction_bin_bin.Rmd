@@ -1,0 +1,33 @@
+---
+title: "interact_bin_bin"
+author: "Jack Wright"
+date: "11/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Interactions between two binary variables
+
+```{r}
+library(AER)
+data('CASchools')
+```
+
+## Example data frame
+```{r}
+df_school<-CASchools%>%mutate(score=(math+read)/2)%>%mutate(HiSTR=as.numeric(students/teachers)>=20)%>%mutate(HiEL=as.numeric(english>=10))%>%select(c(score,HiSTR,HiEL))
+
+head(df_school)
+```
+```{r}
+bi_model <- lm(score ~ HiSTR * HiEL, data = df_school)
+summary(bi_model)
+```
+```{r}
+df_school%>%dlookr::plot_correlate()
+```
+

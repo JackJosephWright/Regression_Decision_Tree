@@ -1,0 +1,187 @@
+---
+title: "multivariate_lin_regression"
+author: "Jack Wright"
+date: "11/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Requirements for multivariate regression
+
+
+Response Requirements
+1.
+
+`response!=binary & response!=count`
+   IF `response==binary`
+    use *multivariate_logistic_regression.Rmd*
+   IF `response==count`
+    use *multivariate_count_regression.Rmd*
+
+
+
+High correlation between predictors can lead to unstable parameter estimates of regression which makes it very difficult to assess the effect of independent variables on dependent variables. 
+
+
+## Check distribution of response variable
+
+-should be normal, transform if needed
+
+check with car::powerTransform
+
+```{r}
+shapiro.test(nyc$Price)
+```
+H_0: data is normal
+
+H_A: data is not normal
+
+IF
+`shapiro.test(response)==FAIL`
+  use `car::powerTransform(response)` to get transformation power
+
+## Correlation and covariance
+
+Dohoo et al. (1997) argued that multicollinearity is certain at the 0.9 level of a correlation coefficient or higher
+
+
+## Analysis of Covariance and correlation
+
+Correlation is a scaled form of covariance (the measure of change in one variable associated to change in another variable.)
+Types of covariance:
+
+1.
+**coincident regression lines**
+
+2.
+**parallel regression lines**
+
+3.
+
+**regression lines with equal intercepts but different slopes**
+
+4.
+
+**unrelated regression lines**
+
+```{r}
+library(dlookr)
+dlookr::plot_correlate(nyc)
+```
+IF `correlation(x_i,x_j)>.9`
+  consider dropping one of the variables from your analysis
+  
+
+
+## Create first fitted model
+
+```{r}
+library(tidyverse)
+library(here)
+nyc<-read.csv(here('data','nyc.csv'))%>%select(-c(Case,Restaurant))
+```
+
+
+```{r}
+lm.list=list()
+lm.list[["lm.base"]]<-lm(Price~.,data=nyc)
+```
+
+```{r}
+summary(lm.list[["lm.base"]])
+```
+## Examine Residuals for possible transformations
+
+see *transformations.Rmd* for interpretation of residual plots for transformations
+
+```{r}
+library(regclass)
+regclass::VIF(lm.list[['lm.base']])
+see *predictor_interaction.RMd* 
+```
+
+
+```{r}
+resid_xpanel(lm.list[['lm.base']])
+```
+it looks like decor might be polynomial
+
+```{r}
+ggplot(nyc,aes(x=Decor,y=Price))+geom_point()+geom_smooth(method='loess',se=FALSE,color='blue')+geom_smooth(method='lm',color='red')
+```
+
+## Examine interactions between predictor variables for possible transformations
+
+**VIF**
+
+
+-The VIF of a predictor is a measure for how easily it is predicted from a linear regression using the other predictors. 
+
+a VIF above 10 indicates high correlation and is cause for concern. Some authors suggest a more conservative level of 2.5 or above. 
+
+if `VIF(predictor)>threshold`
+  best practice is to *remove* the predictors with the highest VIF and rerun the model. 
+
+
+
+
+
+## Add transformations to base model
+
+```{r}
+
+lm.list[['lm.transform']]<-update(lm.list[['lm.base']],~.+I(Decor)^2)
+
+
+summary(lm.list[['lm.transform']])
+```
+
+
+## Create a step regression
+```{r}
+lm.list[['lm.back']]<-step(lm.list[['lm.base']],trace = 0)
+summary(lm.list[['lm.back']])
+```
+## Create a Step Regression from your transformation
+
+```{r}
+lm.list[['lm.bt']]<-step(lm.list[["lm.transform"]],trace=0)
+```
+
+
+`
+
+
+```{r}
+drop1(lm.list[['lm.base']])
+```
+
+## Model Diagnostics
+
+F-test:
+
+.05 threshold model is good
+
+AIC and BIC, model with lowest is best
+
+## Checking Assumptions of linear regression
+
+resid panel
+
+
+no autocorrelation if there is a time base
+
+## VIF
+
+-The VIF of a predictor is a measure for how easily it is predicted from a linear regression using the other predictors. 
+
+a VIF above 10 indicates high correlation and is cause for concern. Some authors suggest a more conservative level of 2.5 or above. 
+```{r}
+library(regclass)
+regclass::VIF(lm.list[['lm.base']])
+```
+
