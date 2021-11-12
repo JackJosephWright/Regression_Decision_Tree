@@ -10,25 +10,19 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-## predictor Interaction
 
-How the effect on the response variable of predictor_i depends on the value of predictor_j
 
-## cases of interaction
+```{r}
+library(janitor)
+df_mc<-read.csv(here('data','MulticollinearityExample.csv'))%>%janitor::clean_names()
+```
 
-1.
 
-interactions between 2 binary variables
+## Example model
 
-SEE *interact_bin_bin.Rmd*
-2.
+```{r}
+MC.list<-list()
+MC.list[['lm.base']]<-lm(femoral_neck~.,data=df_mc)
+car::vif(MC.list[['lm.base']])
+```
 
-interactions between a binary and a continuous variable
-
-see *interact_bin_cont.Rmd*
-
-3.
-
-interaction between two continuous variables
-
-see *interact_cont_cont.Rmd*

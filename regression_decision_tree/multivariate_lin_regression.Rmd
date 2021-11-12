@@ -12,6 +12,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Requirements for multivariate regression
 
+```{r}
+library(tidyverse)
+library(here)
+library(car)
+library(ggResidpanel)
+nyc<-read.csv(here('data','nyc.csv'))
+```
 
 Response Requirements
 1.
@@ -27,6 +34,7 @@ Response Requirements
 High correlation between predictors can lead to unstable parameter estimates of regression which makes it very difficult to assess the effect of independent variables on dependent variables. 
 
 
+no autocorrelation if there is a time base
 ## Check distribution of response variable
 
 -should be normal, transform if needed
@@ -101,18 +109,29 @@ see *transformations.Rmd* for interpretation of residual plots for transformatio
 ```{r}
 library(regclass)
 regclass::VIF(lm.list[['lm.base']])
-see *predictor_interaction.RMd* 
+
 ```
 
-
+see *predictor_interaction.RMd* 
 ```{r}
-resid_xpanel(lm.list[['lm.base']])
+ggResidpanel::resid_xpanel(lm.list[['lm.base']])
+
+car::powerTransform(nyc%>%select(-c(Price,East)))
 ```
 it looks like decor might be polynomial
 
 ```{r}
 ggplot(nyc,aes(x=Decor,y=Price))+geom_point()+geom_smooth(method='loess',se=FALSE,color='blue')+geom_smooth(method='lm',color='red')
 ```
+## Check for heteroscedasticity
+
+```{r}
+library(lmtest)
+lmtest::bptest(lm.list[['lm.base']])
+```
+if `heteroscedasticity(model)==FAIL`
+  SEE *heteroscedasticity_FAIL.Rmd*
+
 
 ## Examine interactions between predictor variables for possible transformations
 
@@ -127,7 +146,10 @@ if `VIF(predictor)>threshold`
   best practice is to *remove* the predictors with the highest VIF and rerun the model. 
 
 
-
+```{r}
+library(regclass)
+regclass::VIF(lm.list[['lm.base']])
+```
 
 
 ## Add transformations to base model
@@ -137,28 +159,62 @@ if `VIF(predictor)>threshold`
 lm.list[['lm.transform']]<-update(lm.list[['lm.base']],~.+I(Decor)^2)
 
 
-summary(lm.list[['lm.transform']])
+#summary(lm.list[['lm.transform']])
 ```
 
 
-## Create a step regression
-```{r}
-lm.list[['lm.back']]<-step(lm.list[['lm.base']],trace = 0)
-summary(lm.list[['lm.back']])
-```
-## Create a Step Regression from your transformation
-
-```{r}
-lm.list[['lm.bt']]<-step(lm.list[["lm.transform"]],trace=0)
-```
 
 
-`
+## Create "best subsets" models
 
+this will create give you the best possible model for models with n predictors up to the `nvmax` parameter
+
+you can use the parameter `method` to select forward or backward selection methods
 
 ```{r}
-drop1(lm.list[['lm.base']])
+library(leaps)
+max_model_variable=4
+best_subset<-leaps::regsubsets(Price~.,data=nyc,nvmax=max_model_variable)
+
+results<-summary(best_subset)
+
+
+
 ```
+
+## Extract and plot results from "lm.best_subset"
+
+```{r}
+tibble(predictors = 1:max_model_variable,
+       adj_R2 = results$adjr2,
+       Cp = results$cp,
+       BIC = results$bic) %>%
+  gather(statistic, value, -predictors) %>%
+  ggplot(aes(predictors, value, color = statistic)) +
+  geom_line(show.legend = F) +
+  geom_point(show.legend = F) +
+  facet_wrap(~ statistic, scales = "free")
+```
+
+```{r}
+paste('best adjR2: ',which.max(results$adjr2),"best BIC: ",which.min(results$bic),"best Cp: ",which.min(results$bic))
+```
+Decide which number of variables is best by examining the curves
+
+## Compare variables and coefficients that these models include
+
+```{r}
+# 2 variable model
+
+coef(best_subset,2)
+```
+## Manually refit model with best predictors to model_list()
+
+```{r}
+lm.list[['lm.best']]<-lm(Price~Food+Decor,data=nyc)
+```
+
+
 
 ## Model Diagnostics
 
@@ -168,12 +224,9 @@ F-test:
 
 AIC and BIC, model with lowest is best
 
-## Checking Assumptions of linear regression
-
-resid panel
 
 
-no autocorrelation if there is a time base
+
 
 ## VIF
 
@@ -183,5 +236,15 @@ a VIF above 10 indicates high correlation and is cause for concern. Some authors
 ```{r}
 library(regclass)
 regclass::VIF(lm.list[['lm.base']])
+```
+
+
+## Model Selection
+```{r}
+AICs<-do.call(AIC,unname(lm.list))$AIC
+adjr2<-lapply(X=lm.list,
+       FUN=function(x) unlist(summary(x)$adj.r.squared))
+(select_df<-data.frame(Models=names(lm.list),AIC=round(AICs,2), R2=round(unlist(unname(adjr2)),2)))
+
 ```
 
