@@ -179,7 +179,7 @@ best_subset<-leaps::regsubsets(Price~.,data=nyc,nvmax=max_model_variable)
 results<-summary(best_subset)
 
 
-
+results
 ```
 
 ## Extract and plot results from "lm.best_subset"

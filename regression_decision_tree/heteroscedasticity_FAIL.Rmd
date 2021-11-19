@@ -36,7 +36,7 @@ wt <- 1 / lm(abs(model$residuals) ~ model$fitted.values)$fitted.values^2
 ```
 
 
-perform weighted least squares regresion
+perform weighted least squares regression
 
 ```{r}
 wls.list[['wls.model']]  <- lm(score ~ hours, data = df, weights=wt)
