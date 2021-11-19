@@ -1,3 +1,4 @@
+library(tidyverse)
 library(shiny)
 library(shinydashboard)
 library(shinyjs)
@@ -14,17 +15,18 @@ ui<-fluidPage(
     choices = NULL
   ),
   tableOutput('contents'),
-  box(id='dtype_response_box',width='10px',
+  
+  shinyjs::hidden(box(id='dtype_response_box',width='10px',
     radioButtons(
       'type_response','What datatype is your response variable',
-                 choices = list('continuous','binary','count')
+                 choices = c('empty_obs')
                  ),
     tags$div(
       "If you want to learn more about response variable datatype, ",
       tags$a(href="https://statisticsbyjim.com/regression/choosing-regression-analysis/", 
              "click here")
     )
-  ),
+  )),
   box(id='predictor_requirements',
       checkboxGroupInput('pred_select','select which predictors you would like to use')
       )
@@ -58,7 +60,9 @@ server<-function(input, output, session){
   })
   output$contents<-renderTable(head(dataInput()))
   observeEvent(input$response_var,{
-    shinyjs::toggle('dtype_response_box')
+    if(!(is.null(input$response_var))){
+    message('response variable is not null')
+    }
   })
 }
 
