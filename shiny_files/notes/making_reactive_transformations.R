@@ -9,6 +9,7 @@ library(ggResidpanel)
 library(leaps)
 library(janitor)
 library(stringr)
+library(DT)
 
 
 ui = fluidPage(
@@ -45,24 +46,34 @@ ui = fluidPage(
     tabPanel("Transformations", fluid = TRUE,
              sidebarLayout(
                sidebarPanel(
-                 selectInput(inputId = 'trans_x',
+                 checkboxGroupInput(inputId='t_type_response',
+                                    label = 'select transformation for response variable',
+                                    choices = c('log','square root','reciprocal','polynomial')),
+                 actionButton("accept_response_transformation", "accept transformation", class = 'btn-success'),
+                 selectInput(inputId = 'trans_x1',
                              label = 'predictor variable 1',
                              choices = NULL),
-                 checkboxGroupInput(inputId='t_type_x',
+                 checkboxGroupInput(inputId='t_type_x1',
                                     label = 'select transformation for x variable',
                                     choices = c('log','square root','reciprocal','polynomial')),
                  sliderInput("poly_x", "polynomial power", value = 2, min = 0, max = 5),
-                 selectInput(inputId = 'trans_y',
+                 actionButton("accept_x1_transformation", "accept transformation", class = 'btn-success'),
+                 selectInput(inputId = 'trans_x2',
                              label = 'variable_y',
                              choices = NULL),
-                 checkboxGroupInput(inputId='t_type_y',
+                 checkboxGroupInput(inputId='t_type_x2',
                                     label = 'select transformation for y variable',
                                     choices = c('log','square root','reciprocal','polynomial')),
-                 sliderInput("poly_y", "polynomial power", value = 2, min = 0, max = 5),),
-                 
+                 sliderInput("poly_y", "polynomial power", value = 2, min = 0, max = 5),
+                 actionButton("accept_x2_transformation", "accept transformation", class = 'btn-success'),
+               ),
+               
+               
                mainPanel(fluidRow(
-                 column(4, plotOutput('vs_response') ),
-                 column(4,verbatimTextOutput('pred_hist'))   
+                 column(6, plotOutput('vs_response'),verbatimTextOutput('pred_hist') ),
+                 column(6,plotOutput('plotx1x2'),
+                        DT::dataTableOutput("df_transformations")
+                        )   
                ),
                fluidRow(
                  
@@ -71,9 +82,9 @@ ui = fluidPage(
                )
                )
              )
-               
-                 
-               
+             
+             
+             
              
     ),
     tabPanel("Modeling", fluid = TRUE,
@@ -149,6 +160,53 @@ server<-function(input, output, session){
     df
     
   })
+  ## functions
+  
+ 
+  rv<-reactiveVal()
+  output$df_transformations<-DT::renderDataTable({
+    if(is.null(rv())){
+      NULL
+    }else{
+    rv()
+    }
+  })
+  observeEvent(input$accept_response_transformation,{
+    if (is.null(rv())){
+      
+      #message('rv is null')
+      rv(df_transform()[3])
+    }else{
+      old_rv<-rv()
+      rv(cbind(old_rv,newcol=df_transform()[3]))
+      #message('rv is not null')
+    }
+  })
+  observeEvent(input$accept_x1_transformation,{
+    if (is.null(rv())){
+      
+      #message('rv is null')
+      rv(df_transform()[1])
+    }else{
+      
+      old_rv<-rv()
+      rv(cbind(old_rv,df_transform()[1]))
+      #message('rv is not null')
+    }
+  })
+  observeEvent(input$accept_x2_transformation,{
+    if (is.null(rv())){
+      
+      #message('rv is null')
+      rv(df_transform()[2])
+    }else{
+      old_rv<-rv()
+      rv(cbind(old_rv,df_transform()[2]))
+      #message('rv is not null')
+    }
+  })
+  
+  
   ## ------RESPONSE VARIABLE TAB-------
   #---
   
@@ -188,13 +246,13 @@ server<-function(input, output, session){
   #----
   
   
- 
+  
   #prints head of table on variable tab
   output$contents<-renderTable(head(dataInput()))
   #---
   output$data_structure<-renderPrint(str(dataInput()))
   observe({
-  updateCheckboxGroupInput(session,'predict_vars', choices=possible_predictor_list())
+    updateCheckboxGroupInput(session,'predict_vars', choices=possible_predictor_list())
   })
   # set the response variable types
   observeEvent(input$response_var,{
@@ -221,53 +279,85 @@ server<-function(input, output, session){
   observe({
     #characterCols<-names(dataInput())
     vars_after_selection<-
-    updateSelectInput(session, 'trans_x',
-                      choices = full_vars(),
-                      selected = NULL
-    )
+      updateSelectInput(session, 'trans_x1',
+                        choices = full_vars(),
+                        selected = NULL
+      )
   })
   observe({
     #characterCols<-names(dataInput())
     vars_after_selection<-
-      updateSelectInput(session, 'trans_y',
+      updateSelectInput(session, 'trans_x2',
                         choices = full_vars(),
                         selected = NULL
       )
   })
   dat<-reactive({
-    d<-data.frame(cbind(dataInput()[input$trans_x],dataInput()[input$trans_y],dataInput()[input$response_var]))
-    
+    d<-data.frame(cbind(dataInput()[input$trans_x1],dataInput()[input$trans_x2],dataInput()[input$response_var]))
+    message(paste(' dat column names: ',colnames(d)))
+    return(d)
   })
-  output$vs_response<-renderPlot({
+  df_transform<-reactive({
     local_dat<-dat()
-    x_transform_list<-as.list(input$t_type_x)
-    y_transform_list<-as.list(input$t_type_y)
-    if('log'%in% x_transform_list){
+    #message('inside reactive df_transform:',colnames(local_dat))
+    x1_transform_list<-as.list(input$t_type_x1)
+    x2_transform_list<-as.list(input$t_type_x2)
+    response_transform_list<-as.list(input$t_type_response)
+    if('log'%in% x1_transform_list){
       local_dat[1]<-log(local_dat[1])
     }
-    if('square root'%in% x_transform_list){
+    if('square root'%in% x1_transform_list){
       local_dat[1]<-sqrt(local_dat[1])
     }
-    if('reciprocal'%in% x_transform_list){
+    if('reciprocal'%in% x1_transform_list){
       local_dat[1]<-1/(local_dat[1])
     }
-    if('polynomial'%in% x_transform_list){
+    if('polynomial'%in% x1_transform_list){
       local_dat[1]<-local_dat[1]+I(local_dat[1]^input$poly_x)
     }
-    if('log'%in% y_transform_list){
+    if('log'%in% x2_transform_list){
       local_dat[2]<-log(local_dat[2])
     }
-    if('square root'%in% y_transform_list){
+    if('square root'%in% x2_transform_list){
       local_dat[2]<-sqrt(local_dat[2])
     }
-    if('reciprocal'%in% y_transform_list){
+    if('reciprocal'%in% x2_transform_list){
       local_dat[2]<-1/(local_dat[2])
     }
-    if('polynomial'%in% y_transform_list){
+    if('polynomial'%in% x2_transform_list){
       local_dat[1]<-local_dat[1]+I(local_dat[1]^input$poly_x)
     }
+    if('log'%in% response_transform_list){
+      local_dat[3]<-log(local_dat[3])
+    }
+    if('square root'%in% response_transform_list){
+      local_dat[3]<-sqrt(local_dat[3])
+    }
+    if('reciprocal'%in% response_transform_list){
+      local_dat[3]<-1/(local_dat[3])
+    }
+    
+    return(local_dat)
+  })
+  output$vs_response<-renderPlot({
+    local_dat<-df_transform()
+    #message(paste('local_dat inside vs_response plot:',colnames(df_transform())))
     #message(paste('col_1:',colnames(dat()[1]),'col_2:',colnames(dat()[2])))
-    return(ggplot(local_dat,aes(x=unlist(local_dat[1]),y=unlist(local_dat[3])))+geom_point()+geom_smooth(method = 'loess', color='blue')+geom_smooth(method='lm',color='red')+labs(x=colnames(local_dat[1]),y=colnames(local_dat[3])))
+    return(ggplot(local_dat,aes(x=unlist(local_dat[1]),y=unlist(local_dat[3])))+
+             geom_point()+geom_smooth(method = 'loess', color='blue')+
+             geom_smooth(method='lm',color='red')+
+             labs(x=colnames(local_dat[1]),y=colnames(local_dat[3]))+
+             ggtitle(paste(names(local_dat[1]),'vs response variable')))
+  })
+  output$plotx1x2<-renderPlot({
+    local_dat<-df_transform()
+    p<-ggplot(local_dat,aes(x=unlist(local_dat[2]),y=unlist(local_dat[1])))+
+      geom_point()+geom_smooth(method = 'loess', color='blue')+
+      geom_smooth(method='lm',color='red')+
+      labs(x=colnames(local_dat[2]),y=colnames(local_dat[1]))+
+      ggtitle(paste(names(local_dat[2]),'vs',names(local_dat[1])))
+    return(p)
+    
   })
   output$correlation<-renderPlot({
     dlookr::plot_correlate(dataInput_selected())
@@ -282,7 +372,7 @@ server<-function(input, output, session){
     #message(paste('df minus last column names:'),names(df[,-length(df)]))
     regsub<-regsubsets(as.matrix(df[,-length(df)]),df[,length(df)])
     
-   
+    
     
     m.list[['bestmod_summary']]<-regsub
     
@@ -299,7 +389,7 @@ server<-function(input, output, session){
   })
   output$mod<-renderPrint({
     
-  summary(mod_list()[[1]])
+    summary(mod_list()[[1]])
   })
   output$selectmod<-renderPrint({
     
@@ -350,7 +440,7 @@ server<-function(input, output, session){
   
   
   
- 
+  
   
 }
 
