@@ -14,6 +14,7 @@ library(stringr)
 
 
 ui = fluidPage(
+  
   tabsetPanel(
     tabPanel("Managing Response and Predictor Variables", fluid = TRUE,
              sidebarLayout(
@@ -84,7 +85,10 @@ ui = fluidPage(
                    splitLayout( cellWidths = c('50%','50%'), 
                    plotOutput('correlation'),
                    tableOutput("df_transformations")
-                    ))
+                    )),
+               fluidRow(
+                 actionButton('clear_transformations','clear all transformations',class = 'btn-danger')
+               )
                
                
                )
@@ -112,6 +116,11 @@ a VIF above 10 indicates high correlation and is cause for concern. Some authors
 
 if `VIF(predictor)>threshold`
   best practice is to *remove* the predictors with the highest VIF and rerun the model. '),tableOutput('base_VIF'))
+               ),
+               fluidRow(
+                 h1('Transformations Model'),
+                 column(6,verbatimTextOutput('trans.mod')),
+                 column(6,plotOutput('trans.resid')),
                ),
                fluidRow(
                  h1('best subsets model'),
@@ -231,6 +240,10 @@ server<-function(input, output, session){
     }
   })
   
+  observeEvent(input$clear_transformations,{
+    rv(NULL)
+  })
+  
   
   ## ------RESPONSE VARIABLE TAB-------
   #---
@@ -251,6 +264,7 @@ server<-function(input, output, session){
   ## get selected predictors
   
   p_list<-reactive({input$predict_vars})
+  
   
   ## get full variable list including response after selection
   
@@ -387,17 +401,56 @@ server<-function(input, output, session){
   output$correlation<-renderPlot({
     dlookr::plot_correlate(dataInput_selected())
   })
+  
+  
+  trans_response_check<-function(df.trans){
+    if (any(grepl(input$response_var, colnames(df.trans)) )){
+      return(TRUE)
+    }else{
+      
+      return(FALSE)
+    }
+  }
+  
   mod_list<-reactive({
     m.list<-list()
     df<-dataInput_selected()%>%relocate(input$response_var, .after = last_col())
-    formula_base<-paste0(input$response_var,'~.')
+    formula_base<-paste0(colnames(df%>%select(contains(input$response_var))),'~.')
     #message(formula_base)
     m.list[['base']]<-lm(formula_base,data=dataInput_selected())
-    max_model_variable<-length(p_list())
+    
+    
+    
+    
+    ## TRANSFORMATIONS MODEL
+    if(all(is.na(rv()))){
+      #message('inside rv is NA')
+    m.list[['trans.mod']]<-m.list[['base']]
+    df.trans<-df
+    #message(colnames(df.trans))
+    }else{
+    df.trans<-rv()
+    if(trans_response_check(df.trans)){
+      #remove response from base df
+      df<-df[,-length(df)]
+      df.trans<-cbind(df,df.trans)%>%relocate(contains(input$response_var), .after=last_col())%>%distinct()
+      #message(colnames(df.trans))
+    }else{
+      df.trans<-cbind(df,df.trans)%>%relocate(contains(input$response_var), .after=last_col())%>%distinct()
+      #message(colnames(df.trans))
+    }
+    }
+    trans_response<-colnames(df.trans%>%select(contains(input$response_var)))
+    trans_arg<-paste0(trans_response,'~.')
+    m.list[['trans.mod']]<-lm(trans_arg,data=df.trans)
+    
+    
+    
+    
+    ## BEST MODEL SELECTION
+    
     #message(paste('df minus last column names:'),names(df[,-length(df)]))
-    regsub<-regsubsets(as.matrix(df[,-length(df)]),df[,length(df)])
-    
-    
+    regsub<-regsubsets(as.matrix(df.trans[,-length(df.trans)]),df.trans[,length(df.trans)])
     
     m.list[['bestmod_summary']]<-regsub
     
@@ -406,26 +459,35 @@ server<-function(input, output, session){
     best_vars_selected<-paste(unlist(best_sub_var_list),collapse="+")
     #message(best_vars_selected)
     #message(temp)
-    bestmod_arg<-paste0(input$response_var,'~',best_vars_selected)
+    bestmod_arg<-paste0(trans_response,'~',best_vars_selected)
     #message(bestmod_arg)
-    m.list[['bestmod']]<-lm(bestmod_arg,data=df)
+    m.list[['bestmod']]<-lm(bestmod_arg,data=df.trans)
     #message(print(summary(m.list['bestmod'])))
+    
+    
     return(m.list)
   })
   output$mod<-renderPrint({
     
     summary(mod_list()[[1]])
   })
-  output$selectmod<-renderPrint({
-    
-    summary(mod_list()[[3]])
-  })
-  output$bestmod<-renderPrint({
+  output$trans.mod<-renderPrint({
     summary(mod_list()[[2]])
   })
+  output$selectmod<-renderPrint({
+    
+    summary(mod_list()[[4]])
+  })
+  output$bestmod<-renderPrint({
+    summary(mod_list()[[3]])
+  })
   output$best_sub_metric_plot<-renderPlot({
-    results<-summary(mod_list()[[2]])
-    tibble(predictors = 1:length(p_list()),
+    results<-summary(mod_list()[[3]])
+    max_var<-as.numeric(ncol(results$outmat))
+    
+    predictor_vector=seq(from=1, to=max_var)
+    message(length(predictor_vector))
+    tibble(predictors = predictor_vector,
            adj_R2 = results$adjr2,
            Cp = results$cp,
            BIC = results$bic) %>%
@@ -438,15 +500,18 @@ server<-function(input, output, session){
   output$base.resid<-renderPlot({
     ggResidpanel::resid_panel(mod_list()[[1]])
   })
+  output$trans.resid<-renderPlot({
+    ggResidpanel::resid_panel(mod_list()[[2]])
+  })
   output$best.resid<-renderPlot({
-    ggResidpanel::resid_panel(mod_list()[[3]])
+    ggResidpanel::resid_panel(mod_list()[[4]])
   })
   output$base_VIF<-renderTable({
     vif_base<-car::vif(mod_list()[[1]])
     t(as.data.frame(vif_base))
   })
   output$print_best_metrics<-renderText({
-    results<-summary(mod_list()[[2]])
+    results<-summary(mod_list()[[3]])
     paste('best adjR2: ',which.max(results$adjr2),"best BIC: ",which.min(results$bic),"best Cp: ",which.min(results$cp))
     
   })
@@ -455,7 +520,7 @@ server<-function(input, output, session){
                       min = 1, max = length(p_list()))
   })
   output$modselect.table<-renderTable({
-    lm.list<-as.list(mod_list())[-2]
+    lm.list<-as.list(mod_list())[-3]
     AICs<-do.call(AIC,unname(lm.list))$AIC
     adjr2<-lapply(X=lm.list,
                   FUN=function(x) unlist(summary(x)$adj.r.squared))
