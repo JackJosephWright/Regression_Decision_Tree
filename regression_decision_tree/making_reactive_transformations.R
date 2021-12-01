@@ -70,16 +70,22 @@ ui = fluidPage(
                
                
                mainPanel(fluidRow(
-                 column(6, plotOutput('vs_response'),verbatimTextOutput('pred_hist') ),
-                 column(6,plotOutput('plotx1x2'),
-                        DT::dataTableOutput("df_transformations")
-                        )   
-               ),
+                 splitLayout(cellWidths = c('50%','50%'),
+                 plotOutput('vs_response'),
+                 plotOutput('plotx1x2')
+               )),
                fluidRow(
                  
-                 plotOutput('correlation'),
+                 verbatimTextOutput('pred_hist'),
                  'multicollinearity between predictors is certain at the 0.9 level of a correlation coefficient or higher. Consider dropping one of the predictors from your analysis '
-               )
+               ),
+                 fluidRow(
+                   splitLayout( cellWidths = c('50%','50%'), 
+                   plotOutput('correlation'),
+                   tableOutput("df_transformations")
+                    ))
+               
+               
                )
              )
              
@@ -164,21 +170,31 @@ server<-function(input, output, session){
   
  
   rv<-reactiveVal()
-  output$df_transformations<-DT::renderDataTable({
+  output$df_transformations<-renderTable({
     if(is.null(rv())){
       NULL
     }else{
     rv()
     }
+    output<-head(rv())
+    return(output)
   })
   observeEvent(input$accept_response_transformation,{
     if (is.null(rv())){
       
       #message('rv is null')
-      rv(df_transform()[3])
+      newcol<-as.data.frame(df_transform()[3])
+      t_name<-paste0(unlist(input$t_type_response))
+      message(t_name)
+      #colnames(newcol)<-paste('name','(',colnames(newcol),')',sep = '')
+      rv(newcol)
     }else{
       old_rv<-rv()
-      rv(cbind(old_rv,newcol=df_transform()[3]))
+      newcol<-as.data.frame(df_transform()[3])
+      colnames(newcol)<-paste(input$t_type_response,'(',colnames(newcol),')',sep = '')
+      message(colnames(newcol))
+      
+      rv(cbind(old_rv,newcol))
       #message('rv is not null')
     }
   })
@@ -294,7 +310,7 @@ server<-function(input, output, session){
   })
   dat<-reactive({
     d<-data.frame(cbind(dataInput()[input$trans_x1],dataInput()[input$trans_x2],dataInput()[input$response_var]))
-    message(paste(' dat column names: ',colnames(d)))
+    #message(paste(' dat column names: ',colnames(d)))
     return(d)
   })
   df_transform<-reactive({
@@ -382,7 +398,7 @@ server<-function(input, output, session){
     #message(best_vars_selected)
     #message(temp)
     bestmod_arg<-paste0(input$response_var,'~',best_vars_selected)
-    message(bestmod_arg)
+    #message(bestmod_arg)
     m.list[['bestmod']]<-lm(bestmod_arg,data=df)
     #message(print(summary(m.list['bestmod'])))
     return(m.list)
