@@ -91,10 +91,19 @@ ui = fluidPage(
                        ), # close sidebarPanel,
                      mainPanel(
                        fluidRow(
-                         splitLayout(cellWidths = c('50%','50%')),
+                         splitLayout(style = "border: 1px solid silver;",cellWidths = c("50%", "50%"),
+                         
                          plotOutput('r_x1'),
                          plotOutput('x1_x2')
-                       )# close ggplots row
+                         )
+                       ),# close ggplots row
+                       fluidRow(
+                         splitLayout(style = "border: 1px solid silver;",cellWidths = c("20%", "40%","40%"),
+                         tableOutput('cor_table'),
+                         plotOutput('correlation'),
+                         tableOutput('df.trans.stored')
+                         )
+                       )
                       
                      ) #close mainPanel
                    ) # close sidebarLayout
@@ -178,8 +187,15 @@ server<-function(input, output, session){
   
   df.t<-reactiveVal()
   toListen<-reactive({
+    #listener for change of input on plots
     list(input$x1,input$x2)
   })
+  
+  toAccept<-reactiveVal({
+    #listener that a transformation has been accepted
+    
+  })
+  df.t.accepted<-reactiveVal()
   
   
   ## OBSERVERS
@@ -254,7 +270,7 @@ server<-function(input, output, session){
     #create plot frame 
     d<-data.frame(cbind(raw_data()[input$x1],raw_data()[input$x2],raw_data()[input$response_var]))
     df.t(d)
-    message('colnames df.t:',colnames(df.t()))
+    #message('colnames df.t:',colnames(df.t()))
     
   })
   
@@ -266,6 +282,40 @@ server<-function(input, output, session){
     output$x1_x2<-renderPlot(showplot1(df.t(),1,2))
   })
   
+  # create corr table and corr list
+  observeEvent(p_selected(),{
+    df.local<-raw_data()%>%select(p_selected(),input$response_var)
+    output$correlation<-renderPlot(dlookr::plot_correlate(df.local))
+    output$cor_table<-renderTable(dlookr::correlate(df.local)%>%filter(var2==input$response_var)%>%select(var1,coef_corr)%>%arrange(desc(coef_corr)))
+  })
+  
+  #setting the value of toAccept() listener
+  observeEvent(input$acpt_t_r,{
+    toAccept(3)
+    
+  })
+  observeEvent(input$acpt_t_x1,{
+    toAccept(1)
+    
+  })
+  observeEvent(input$acpt_t_x2,{
+    toAccept(2)
+    
+  })
+  
+ 
+  observeEvent(toAccept(),{
+    
+    
+    if(is.null(df.t.accepted())){
+      df.t.accepted(as.data.frame(df.t()[toAccept()]))
+    }else{
+      df.t.accepted(cbind(df.t.accepted(),df.t()[toAccept()]))
+    }
+    message(colnames(df.t.accepted()))
+    
+    toAccept(NULL)
+  })
   
   
   

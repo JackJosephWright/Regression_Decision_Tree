@@ -143,7 +143,7 @@ if `VIF(predictor)>threshold`
     ),
     tabPanel("Model Selection and Analysis", fluid = TRUE,
              sidebarLayout(
-               sidebarPanel(sliderInput("year", "Year:", min = 1968, max = 2009, value = 2009, sep='')),
+               sidebarPanel(),
                mainPanel(fluidRow(
                  tableOutput('modselect.table')   
                )

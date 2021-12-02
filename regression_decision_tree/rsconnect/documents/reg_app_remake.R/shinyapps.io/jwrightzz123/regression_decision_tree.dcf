@@ -1,0 +1,14 @@
+name: regression_decision_tree
+title: regression_decision_tree
+username:
+account: jwrightzz123
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5248828
+bundleId: 5317264
+url: https://jwrightzz123.shinyapps.io/regression_decision_tree/
+when: 1638412818.47167
+lastSyncTime: 1638412818.47167
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: big_tree_scratch.Rmd|common_transformation_patterns.Rmd|current_app_2021112.R|data/changeover_times.csv|data/cleaningwtd.txt|data/MichelinFood.txt|data/MulticollinearityExample.csv|data/nyc.csv|heteroscedasticity_FAIL.Rmd|interaction_bin_bin.Rmd|making_reactive_transformations.R|multivariate_lin_regression.html|multivariate_lin_regression.Rmd|predictor_interaction.Rmd|reg_tree.py|simple_lin_categorical_predictor.Rmd|simple_lin_dummy.Rmd|simple_lin_reg.Rmd|simple_logistic_regression.Rmd|try 2 for app.R|updating reactive_df.R|wls_given_variance.Rmd|regression_app

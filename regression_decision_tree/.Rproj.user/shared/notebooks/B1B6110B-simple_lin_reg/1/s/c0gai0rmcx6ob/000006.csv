@@ -1,7 +1,0 @@
-"0","x<-seq(1,20)"
-"0","y<-x^2"
-"0","y_error<-50*runif(20)*sample(-1:1,20,replace = TRUE)"
-"0","y<-y+y_error"
-"0",""
-"0","df_exp<-data.frame(x,y)"
-"0","ggplot(df_exp,aes(x=x,y=y))+geom_point()"
