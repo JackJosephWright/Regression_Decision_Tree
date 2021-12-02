@@ -117,7 +117,26 @@ ui = fluidPage(
 
 server<-function(input, output, session){
   ## FUNCTIONS
-  
+  t.specific<-function(){
+    action_button_list<-list('x1','x2','r')
+    #transform column
+    #get column
+    col<-as.data.frame(df.t()[toAccept()])
+    
+    #identify which button to check 
+    transform_func<-paste0('t_type_',action_button_list[toAccept()])
+    fn<-input[[transform_func]]
+    #check is not 'none', if 'none'break
+    if(fn=='none'){
+      toAccept(NULL)
+      return(NULL)
+      
+    }
+    
+    #put column and fn into transform_column()
+    t.col<-transform_column(col,fn)
+    return(t.col)
+  }
   transform_column<-function(column,fn){
     #transforms a single column and returns a named vector
     if(fn=='log'){
@@ -133,7 +152,7 @@ server<-function(input, output, session){
     
   }
   log_transform<-function(column){
-    min_val<-min(column)
+    minval<-min(column)
     if(minval>0){
     return(log(column))
     }else{
@@ -142,7 +161,7 @@ server<-function(input, output, session){
     }
   }
   sqrt_transform<-function(column){
-    min_val<-min(column)
+    minval<-min(column)
     if(minval>0){
       return(sqrt(column))
     }else{
@@ -152,6 +171,16 @@ server<-function(input, output, session){
   }
   poly_transform<-function(column){
     return((column)^2)
+  }
+  
+  
+  trans_response_check<-function(df){
+    if (any(grepl(input$response_var, colnames(df)) )){
+      return(TRUE)
+    }else{
+      
+      return(FALSE)
+    }
   }
   
   #plotting functions
@@ -261,6 +290,7 @@ server<-function(input, output, session){
     updateRadioButtons(session,
                        't_type_x2',
                        selected='none')
+    df.t.accepted(NULL)
     #delete transformation table
     
     
@@ -304,17 +334,57 @@ server<-function(input, output, session){
   })
   
  
+  # generate df.t.accep
   observeEvent(toAccept(),{
+    t.col1<-t.specific()
     
+    action_button_list<-list('x1','x2','r')
+    #transform column
+    #get column
+    col<-as.data.frame(df.t()[toAccept()])
     
-    if(is.null(df.t.accepted())){
-      df.t.accepted(as.data.frame(df.t()[toAccept()]))
-    }else{
-      df.t.accepted(cbind(df.t.accepted(),df.t()[toAccept()]))
+    #identify which button to check 
+    transform_func<-paste0('t_type_',action_button_list[toAccept()])
+    fn<-input[[transform_func]]
+    #check is not 'none', if 'none'break
+    if(fn=='none'){
+      toAccept(NULL)
+      return(NULL)
+      
     }
-    message(colnames(df.t.accepted()))
+    
+    #put column and fn into transform_column()
+    t.col<-transform_column(col,fn)
+    #rename the column something descriptive with the transformation
+    oldname<-names(t.col)
+    newname<-paste0(fn,'(',names(t.col),')')
+    colnames(t.col)<-newname
+    
+    #check that the column doesnt already exist in df.t.accepted
+    if(newname%in%colnames(df.t.accepted())){
+      toAccept(NULL)
+      return(NULL)
+    }
+    #if it is the response, remove the previous response transformation
+    #append column to df.t.accepted
+    if(trans_response_check(df.t.accepted() )& oldname==input$response_var){
+      df.t.accepted(df.t.accepted()%>%select(-contains(input$response_var)))
+      
+    }
+    if(is.null(df.t.accepted())){
+      df.t.accepted(t.col)
+    }else{
+      df.t.accepted(cbind(df.t.accepted(),t.col))
+    }
+    
     
     toAccept(NULL)
+  })
+  observeEvent(df.t.accepted(),{
+    output$df.trans.stored<-renderTable({
+      colnames(df.t.accepted())
+    })
+    
   })
   
   
