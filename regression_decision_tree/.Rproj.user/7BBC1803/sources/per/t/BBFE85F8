@@ -1,0 +1,26 @@
+{
+    "id": "BBFE85F8",
+    "path": "C:/Program Files/GitHub/data_vis_final/regression_decision_tree/reg_app_remake.R",
+    "project_path": "reg_app_remake.R",
+    "type": "r_source",
+    "hash": "2808847479",
+    "contents": "",
+    "dirty": false,
+    "created": 1638403961558.0,
+    "source_on_save": false,
+    "relative_order": 4,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "338,10",
+        "scrollLine": "329"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1638496702,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1638496702,
+    "read_only": false,
+    "read_only_alternatives": []
+}
