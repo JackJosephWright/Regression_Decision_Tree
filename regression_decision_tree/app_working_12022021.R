@@ -93,8 +93,8 @@ ui = fluidPage(
                        fluidRow(
                          splitLayout(style = "border: 1px solid silver;",cellWidths = c("50%", "50%"),
                          
-                         plotOutput('r_x1'),
-                         plotOutput('x1_x2')
+                         column(12,plotOutput('r_x1')),
+                         column(12,plotOutput('x1_x2'))
                          )
                        ),# close ggplots row
                        fluidRow(
@@ -133,16 +133,32 @@ ui = fluidPage(
                        ),
                        fluidRow(
                          splitLayout(style = "border: 1px solid silver;",cellWidths = c("50%","50%"),
-                                     verbatimTextOutput('best.mod.summary'),
-                                     plotOutput('best.submetric.plot')
+                                     column(12,verbatimTextOutput('best.mod.summary'),fluidRow(numericInput(inputId = 'size.best','select number of variables for best subset model',value=1 ),actionButton(inputId='submit.select','select',class='btn-success')) ),
+                                     column(12,em('R^2 is best when maximized, and BIC and Cp are best when minimized'),plotOutput('best.submetric.plot'),verbatimTextOutput('best.metrics'))
+                         ),
+                         
+                       ),
+                       h1('selected variable model'),
+                       fluidRow(
+                         splitLayout(style = "border: 1px solid silver;",cellWidths = c("50%","50%"),
+                                     verbatimTextOutput('select.mod'),
+                                     plotOutput('select.resid')
                          )
                        )
                        
                        
                    )
                    
-          )#close modeling tab
-          
+          ),#close modeling tab
+    tabPanel("Model Selection and Analysis", fluid = TRUE,
+             sidebarLayout(
+               sidebarPanel(),
+               mainPanel(fluidRow(
+                 tableOutput('modselect.table')   
+               )
+               )
+             )
+    ) #close selection and analysis panel
       
           ), # close tabsetPanel
  
@@ -245,10 +261,22 @@ server<-function(input, output, session){
   
   #plotting functions
   showplot1 <- function(indata, inx, iny){
+    if(max(indata[inx])<1){
+      p <- ggplot(indata, 
+                  aes_q(x = as.name(names(indata)[inx]), 
+                        y = as.name(names(indata)[iny])))
+      p + geom_point()+geom_smooth(method='loess',color='blue')+geom_smooth(method='lm',color='red')+xlim(0,1)
+    }else if(max(indata[iny])<1){
+      p <- ggplot(indata, 
+                  aes_q(x = as.name(names(indata)[inx]), 
+                        y = as.name(names(indata)[iny])))
+      p + geom_point()+geom_smooth(method='loess',color='blue')+geom_smooth(method='lm',color='red')+ylim(0,1)
+    }else{
     p <- ggplot(indata, 
                 aes_q(x = as.name(names(indata)[inx]), 
                       y = as.name(names(indata)[iny])))
     p + geom_point()+geom_smooth(method='loess',color='blue')+geom_smooth(method='lm',color='red')
+    }
   }
   ## REACTIVE ELEMENTS
   
@@ -302,6 +330,7 @@ server<-function(input, output, session){
   mod.list<-reactiveVal({})
   df.base.mod<-reactiveVal({})
   df.trans.mod<-reactiveVal()
+  best.mod.sum<-reactiveVal()
  
   ## OBSERVERS
   
@@ -409,7 +438,10 @@ server<-function(input, output, session){
   
   observeEvent(df.t(),{
     #generate x1 vs response
-    output$r_x1<-renderPlot({showplot1(df.t(),1,3)})
+    output$r_x1<-renderPlot({
+      
+      showplot1(df.t(),1,3)
+      })
   })
   observeEvent(df.t(),{
     output$x1_x2<-renderPlot(showplot1(df.t(),1,2))
@@ -454,7 +486,7 @@ server<-function(input, output, session){
     
     oldname<-names(t.col)
     
-    newname<-paste0(fn,'(',names(t.col),')')
+    newname<-paste0(fn,names(t.col))
     colnames(t.col)<-newname
     if(oldname==input$response_var){
       t.response.name(newname)
@@ -522,18 +554,25 @@ server<-function(input, output, session){
   
   observeEvent(df.trans.mod(),{
     #message('made it into the model list observer')
+    
     formula_base<-paste0(input$response_var,'~.')
     #message(formula_base)
     m<-list()
     m[['base']]<-lm(formula_base,data=df.base.mod())
     if(is.null(t.response.name())){
+      
       t.response<-input$response_var
+      
     }else{
       t.response<-t.response.name()
+      #message('t.response.name:',t.response.name())
     }
     formula_trans<-paste0(t.response,'~.')
+    #message(colnames(df.trans.mod()))
     m[['trans']]<-lm(formula_trans, data=df.trans.mod())
+    
     mod.list(m)
+    #message(colnames(mod.list()))
     #message(names(mod.list()))
   })
   
@@ -553,7 +592,7 @@ server<-function(input, output, session){
   })
   observeEvent(mod.list(),{
     #plot residuals base.mod
-    output$trans.resid<-renderPlot(ggResidpanel::resid_panel(mod.list()[[1]]))
+    output$trans.resid<-renderPlot(ggResidpanel::resid_panel(mod.list()[[2]]))
   })
   
   
@@ -583,15 +622,19 @@ server<-function(input, output, session){
   observeEvent(input$best.mod.run,{
     m<-mod.list()
     df<-df.trans.mod()
+    #message(length(df))
     
     #if(!identical(colnames(df.trans.mod()),colnames(df.base.mod()))){
     regsub<-regsubsets(as.matrix(df[,-length(df)]),df[,length(df)])
     best.summary<-summary(regsub)
-    output$best.mod.summary<-renderPrint(best.summary)
-    if(df[,-length(df)]>8){
+    #best.summary<-summary(regsub)
+    best.mod.sum(regsub)
+    output$best.mod.summary<-renderPrint(summary(regsub))
+    if(length(df[,-length(df)])>8){
       size<-8
     }else{
-      size<-df[,-length(df)]
+      size<-length(df[,-length(df)])
+      #message(size)
     }
     output$best.submetric.plot<-renderPlot({
       tibble(predictors = 1:size,
@@ -608,7 +651,44 @@ server<-function(input, output, session){
     
   })
   
+  observeEvent(input$best.mod.run,{
+    output$best.metrics<-renderText({
+      results<-summary(best.mod.sum())
+      paste('best adjR2: ',which.max(results$adjr2),"best BIC: ",which.min(results$bic),"best Cp: ",which.min(results$cp))
+    })
+    
+  })
   
+  observeEvent(input$submit.select,{
+    m<-mod.list()
+    regsub<-best.mod.sum()
+    best.sub.var.list<-as.list(names(coef(regsub,input$size.best)))[-1]
+    #message(best.sub.var.list)
+    best.selected<-paste(unlist(best.sub.var.list),collapse="+")
+    if(is.null(t.response.name())){
+      
+      t.response<-input$response_var
+      
+    }else{
+      t.response<-t.response.name()
+      #message('t.response.name:',t.response.name())
+    }
+    
+    best.mod.arg<-paste0(t.response,'~',best.selected)
+
+    m[['best.mod']]<-lm(best.mod.arg,data=df.trans.mod())
+    mod.list(m)
+    output$select.mod<-renderPrint(summary(m[['best.mod']]))
+    output$select.resid<-renderPlot(ggResidpanel::resid_panel(mod.list()[[3]]))
+  })
+  
+  observeEvent(input$submit.select,{
+    m.list<-as.list(mod.list())
+    AICs<-do.call(AIC,unname(m.list))$AIC
+    adjr2<-lapply(X=m.list,
+                  FUN = function(x) unlist(summary(x)$adj.r.squared))
+    output$modselect.table<-renderTable(data.frame(Models=names(m.list),AIC=round(AICs,2),R2 = round(unlist(unname(adjr2)),2)))
+  })
   
   
   

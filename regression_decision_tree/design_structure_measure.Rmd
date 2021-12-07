@@ -1,0 +1,25 @@
+---
+title: "connection density"
+author: "Jack Wright"
+date: "12/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+$$b=branches$$
+$$n=non-terminal~nodes$$
+
+$$ \rho_c= \frac{b}{n}= connection~density$$
+
+$$d=tree~depth, ~or~length~of~path~from~first~passage~to~farthest~leaf$$
+
+$$
+d^{\rho_c}= design~structure~measure
+$$
+
+
+$$b=7, n=5, d=4$$
+$$d^{\rho_c}=4^{\frac{7}{5}}=6.96$$

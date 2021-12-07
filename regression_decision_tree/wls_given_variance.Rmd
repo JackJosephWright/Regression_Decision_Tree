@@ -7,6 +7,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
 ```
 
 ## Requirements for weighted least squares regression
@@ -27,6 +29,7 @@ OR `heteroscedasticity_test(simple_lin_reg)=FAIL`
 
 ```{r}
 clean<-read.table(here('data','cleaningwtd.txt'),header=TRUE)
+m.list<-list()
 m.list[['wls_no_weight']]<-lm(Rooms~Crews,data=clean)
 summary(m.list[['wls_no_weight']])
 ```

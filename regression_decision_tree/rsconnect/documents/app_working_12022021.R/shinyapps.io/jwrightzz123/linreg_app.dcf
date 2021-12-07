@@ -5,10 +5,10 @@ account: jwrightzz123
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 5257401
-bundleId: 5321811
+bundleId: 5323649
 url: https://jwrightzz123.shinyapps.io/linreg_app/
-when: 1638497835.05113
-lastSyncTime: 1638497835.05113
+when: 1638542454.11455
+lastSyncTime: 1638542454.11554
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: big_tree_scratch.Rmd|common_transformation_patterns.Rmd|current_app_2021112.R|data/changeover_times.csv|data/cleaningwtd.txt|data/MichelinFood.txt|data/MulticollinearityExample.csv|data/nyc.csv|heteroscedasticity_FAIL.Rmd|interaction_bin_bin.Rmd|making_reactive_transformations.R|multivariate_lin_regression.html|multivariate_lin_regression.Rmd|predictor_interaction.Rmd|reg_app_remake.R|reg_tree.py|simple_lin_categorical_predictor.Rmd|simple_lin_dummy.Rmd|simple_lin_reg.Rmd|simple_logistic_regression.Rmd|try 2 for app.R|updating reactive_df.R|wls_given_variance.Rmd|regression_app
+ignoredFiles: .RData|big_tree_scratch.Rmd|common_transformation_patterns.Rmd|current_app_2021112.R|data/changeover_times.csv|data/cleaningwtd.txt|data/MichelinFood.txt|data/MulticollinearityExample.csv|data/nyc.csv|heteroscedasticity_FAIL.Rmd|interaction_bin_bin.Rmd|making_reactive_transformations.R|multivariate_lin_regression.html|multivariate_lin_regression.Rmd|predictor_interaction.Rmd|reg_app_remake.R|reg_tree.py|simple_lin_categorical_predictor.Rmd|simple_lin_dummy.Rmd|simple_lin_reg.Rmd|simple_logistic_regression.Rmd|try 2 for app.R|updating reactive_df.R|wls_given_variance.Rmd|regression_app
