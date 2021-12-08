@@ -259,6 +259,7 @@ server<-function(input, output, session){
     }
   }
   neq_nothing<-function(x){
+    
     if(x!=""){
       return(TRUE)
     }else{
@@ -311,32 +312,21 @@ server<-function(input, output, session){
   
   df.t<-reactiveVal(NULL)
   df.t.static<-reactiveVal(NULL)
-  toListen<-reactiveVal({
-    if(length(p_selected())<2){
+  toListen<-reactive({
+    if(any(sapply(list(input$x1,input$x2),neq_nothing))){
+      list(input$x1,input$x2)
+    }
+    
+  })
+  plot.t.Listen<-reactive({
+    NULL
+    if(is.null(input$t_type_x1)|is.null(input$t_type_x2)){
       NULL
     }else{
-      list(input$x1,input$x2)
-      message(list(input$x1,input$x2))
+      list(input$t_type_x1,input$t_type_x2,input$t_type_r)
     }
+
   })
-  plot.t.Listen<-reactiveVal({NULL})
-  
-  
-  
-  
-  observeEvent(p_selected(),{
-    if(length(p_selected()>=2)){
-      toListen(list(input$x1,input$x2))
-      message('toListen triggered')
-    }
-    #load plot.t.Listen when t_types are filled OR once filled, changed
-    if(!is.null(p_selected()) & length(list(input$t_type_x1,input$t_type_x2,input$t_type_r))==3){
-      #message('t_types:',list(input$t_type_x1,input$t_type_x2,input$t_type_r))
-      output_list<-list(input$t_type_x1,input$t_type_x2,input$t_type_r)
-      plot.t.Listen(output_list)
-      }
-  })
- 
   
   
   
@@ -443,17 +433,7 @@ server<-function(input, output, session){
     
   })
   
-  observeEvent(toListen(),{
-    #create plot frame 
-    #message('df.t.static triggered')
-    #d<-data.frame(cbind(raw_data()[input$x1],raw_data()[input$x2],raw_data()[input$response_var]))
-    #message(paste('df.t.static() columns:',colnames(d)))
-    df.t.static(list(input$x1,input$x2,input$response_var))
-    #message(df.t.static())
-    
-    #message('colnames df.t:',colnames(df.t()))
-    
-  })
+ 
   
   
   
@@ -470,33 +450,30 @@ server<-function(input, output, session){
     
   })
   
+  observeEvent(toListen(),{
+    df.t.static(list(input$x1,input$x2,input$response_var))
+    
+  })
+  
+  observeEvent(plot.t.Listen(),{
+    
+  })
   
   ##--COMMENTED OUT SECTION
   
-  observeEvent(plot.t.Listen,{
-    #message('inside event observer for plot.t.Listen()')
-    #message(df.t.static())
-    #df.local<-raw_data()%>%select(df.t.static())
-    # if(!is.null(predictor_list())){
-    #   for(i in 1:3){
-    #     col<-t.specific(action='plot',i=i)
-    #     df.local[i]<-col
-    # 
-    #   }
-    #   df.t(df.local)
-    # }
-    #message(colnames(df.local))
-  })
+ 
   
  
-  # 
-  # observeEvent(df.t(),{
-  #   #generate x1 vs response
-  #   output$r_x1<-renderPlot({
-  #     
-  #     showplot1(df.t(),1,3)
-  #   })
-  # })
+
+  observeEvent(plot.t.Listen(),{
+    
+    output$r_x1<-renderPlot({
+      arg<-paste(toListen()[[1]],input$response_var,sep=',')
+      message(colnames(raw_data()%>%select(arg)))
+      #message(arg)
+      #showplot1(raw_data()%>%select(arg))
+    })
+  })
   # observeEvent(df.t(),{
   #   output$x1_x2<-renderPlot(showplot1(df.t(),1,2))
   # })
