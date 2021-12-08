@@ -246,11 +246,18 @@ server<-function(input, output, session){
     }
   }
   poly_transform<-function(column){
-    return(column+(column)^2)
+    return((column)^2)
   }
   
   
- 
+  trans_response_check<-function(df){
+    if (any(grepl(input$response_var, colnames(df)) )){
+      return(TRUE)
+    }else{
+      
+      return(FALSE)
+    }
+  }
   neq_nothing<-function(x){
     
     if(x!=""){
@@ -261,42 +268,23 @@ server<-function(input, output, session){
   }
   
   #plotting functions
-  showplot1 <- function(indata, inx, iny, type){
-    xname<-as.name(names(indata)[inx])
-    yname<- as.name(names(indata)[iny])
-    if(ncol(indata)<2){
-      yname=xname
-      iny=inx
+  showplot1 <- function(indata, inx, iny){
+    if(max(indata[inx])<1){
+      p <- ggplot(indata, 
+                  aes_q(x = as.name(names(indata)[inx]), 
+                        y = as.name(names(indata)[iny])))
+      p + geom_point()+geom_smooth(method='loess',color='blue')+geom_smooth(method='lm',color='red')+xlim(0,1)
+    }else if(max(indata[iny])<1){
+      p <- ggplot(indata, 
+                  aes_q(x = as.name(names(indata)[inx]), 
+                        y = as.name(names(indata)[iny])))
+      p + geom_point()+geom_smooth(method='loess',color='blue')+geom_smooth(method='lm',color='red')+ylim(0,1)
+    }else{
+      p <- ggplot(indata, 
+                  aes_q(x = as.name(names(indata)[inx]), 
+                        y = as.name(names(indata)[iny])))
+      p + geom_point()+geom_smooth(method='loess',color='blue')+geom_smooth(method='lm',color='red')
     }
-    
-    transform.holder$variables<-list(input$x1,input$x2,input$response_var)
-    transform.holder$transformations<-list(input$t_type_x1,input$t_type_x2,input$t_type_r)
-    
-    t.list<-list(input$t_type_x1,input$t_type_x2,input$t_type_r)
-    
-    if(type=='target'){
-      indata[inx]<-transform_column(indata[inx],fn=t.list[1])
-      indata[iny]<-transform_column(indata[iny],fn=t.list[3])
-    }else if(type == 'interaction'){
-      indata[inx]<-transform_column(indata[inx],fn=t.list[1])
-      indata[iny]<-transform_column(indata[iny],fn=t.list[2])
-    }
-  
-    if(count(unique(indata[inx]))==2 & type=='target'){
-    
-      p <- ggplot(indata,
-                  aes_q(x = xname,
-                        y = yname, fill=yname))
-      return(p+geom_boxplot())
-    }
-    
-    
-    
-    p <- ggplot(indata,
-                aes_q(x = xname,
-                      y = yname))
-    p + geom_point()+geom_smooth(method='loess',color='blue')+geom_smooth(method='lm',color='red')
-    
   }
   ## REACTIVE ELEMENTS
   
@@ -351,7 +339,8 @@ server<-function(input, output, session){
     NULL
   })
   
- 
+  #df.t.plot for plotting transformations
+  #df.t.plot()<-reactiveVal()
   
   ## model tab reactive elements
   
@@ -359,8 +348,6 @@ server<-function(input, output, session){
   df.base.mod<-reactiveVal({NULL})
   df.trans.mod<-reactiveVal(NULL)
   best.mod.sum<-reactiveVal(NULL)
-  transform.holder <- reactiveValues(variables = NULL, transformations = NULL)
-  accepted.transformations<-reactiveValues(df=data.frame(variables=character(),transformations=character()))
   
   ## OBSERVERS
   
@@ -440,7 +427,7 @@ server<-function(input, output, session){
                        't_type_x2',
                        selected='none')
     df.t.accepted(NULL)
-    accepted.transformations$df<-data.frame(variables=character(),transformations=character())
+    t.response.name(NULL)
     #delete transformation table
     
     
@@ -481,73 +468,23 @@ server<-function(input, output, session){
   observeEvent(plot.t.Listen(),{
     
     output$r_x1<-renderPlot({
-      
-     
-      showplot1(raw_data()%>%select(c(as.character(toListen()[[1]]),input$response_var)),inx=1,iny=2, type='target')
-      
-      
-    })
-   output$x1_x2<-renderPlot({
-        
-      
-      showplot1(raw_data()%>%select(c(input$x1,input$x2)),inx=1,iny=2, type='interaction')
+      arg<-paste(toListen()[[1]],input$response_var,sep=',')
+      message(colnames(raw_data()%>%select(arg)))
+      #message(arg)
+      #showplot1(raw_data()%>%select(arg))
     })
   })
-  
-  #set value of accepting transformation Listener
-  observeEvent(input$acpt_t_r,{
-      toAccept(NULL)
-      toAccept(3)
-
-    })
-    observeEvent(input$acpt_t_x1,{
-      toAccept(NULL)
-      toAccept(1)
-
-    })
-    observeEvent(input$acpt_t_x2,{
-      toAccept(NULL)
-      toAccept(2)
-
-    })
-  observeEvent(toAccept(),{
-    
-    accepted.transformations$df<-rbind(
-      if(transform.holder$variables[toAccept()]==input$response_var){
-        accepted.transformations$df%>%filter(variables!=input$response_var)
-        
-      }else{
-        accepted.transformations$df
-      }
-      ,
-      c(transform.holder$variables[toAccept()],
-        transform.holder$transformations[toAccept()])
-      )
-    
-    
-       
-    
-    output$df.trans.stored<-renderTable({
-    colnames(accepted.transformations$df)<-c('variables','transformations')
-    if(input$response_var %in% accepted.transformations$df$variables){
-      accepted.transformations$df<-rbind(accepted.transformations$df%>%filter(variables!=input$response_var),accepted.transformations$df%>%filter(variables==input$response_var))
-    }
-    unique(accepted.transformations$df)
-     
-      })
-    })
-  
   # observeEvent(df.t(),{
   #   output$x1_x2<-renderPlot(showplot1(df.t(),1,2))
   # })
   # 
   # 
   # # create corr table and corr list
-  observeEvent(p_selected(),{
-    df.local<-raw_data()%>%select(p_selected(),input$response_var)
-    output$correlation<-renderPlot(dlookr::plot_correlate(df.local))
-    output$cor_table<-renderTable(dlookr::correlate(df.local)%>%filter(var2==input$response_var)%>%select(var1,coef_corr)%>%arrange(desc(coef_corr)))
-  })
+  # observeEvent(p_selected(),{
+  #   df.local<-raw_data()%>%select(p_selected(),input$response_var)
+  #   output$correlation<-renderPlot(dlookr::plot_correlate(df.local))
+  #   output$cor_table<-renderTable(dlookr::correlate(df.local)%>%filter(var2==input$response_var)%>%select(var1,coef_corr)%>%arrange(desc(coef_corr)))
+  # })
   # 
   # #setting the value of toAccept() listener
   # observeEvent(input$acpt_t_r,{
@@ -615,106 +552,75 @@ server<-function(input, output, session){
   # 
   # ## models observers
   # 
-  #
-   observeEvent(input$tabSwitch, {
-    #generate table to model off of
-     if(!is.null(predictor_list())){
-     
-       if(input$tabSwitch =='Modeling'){
-        #message( nrow(accepted.transformations$df))
-         df.base<-raw_data()%>%select(p_selected(),input$response_var)
-         
-         #message(colnames(transformation.df))
-         if(nrow(accepted.transformations$df)==0){
-          return(df.base.mod(df.base))
-           
-         }else{
-           transformation.df<-apply(unique(accepted.transformations$df)[,c('variables','transformations')],1,function(x) transform_column(column=raw_data()[x[1]],fn=x[2]))%>%bind_cols()
-           colnames(transformation.df)<-apply(unique(accepted.transformations$df)[,c('variables','transformations')],1,function(x) paste(x[2],x[1],sep = "_"))
-         }
-         
-         if(input$response_var %in% accepted.transformations$df$variables){
-           df.full<-cbind(df.base%>%select(-input$response_var),transformation.df)
-           return(df.base.mod(df.full))
-           #message(col
-         }else{
-           df.full<-cbind(df.base,transformation.df%>%relocate(input$response_var,.after = last_col()))
-           return(df.base.mod(df.full))
-         }
-       }
-     }
-   })
-   # 
+  # 
+  # 
+  # 
+  # 
   # 
   # observeEvent(input$tabSwitch, {
   #   if(!is.null(predictor_list())){
   #     if(input$tabSwitch=='Modeling'){
-  # 
+  #       
   #       #generate df.base.mod
-  #       df.base.mod<-raw_data()%>%select(p_selected(),input$response_var)
+  #       df.base.mod(raw_data()%>%select(p_selected(),input$response_var))
   #       #generate df.trans.mod
-  #       #message(colnames(df.base.mod))
-  #       # if(length(df.t.accepted()>0)){
-  #       #   if(grepl(input$response_var,colnames(df.t.accepted()))){
-  #       #     df.trans.mod(cbind(df.base.mod()%>%select(-input$response_var),df.t.accepted())%>%relocate(t.response.name(),.after = last_col()))
-  #       #   }else{
-  #       #     df.trans.mod(cbind(df.base.mod(),df.t.accepted()))
-  #       #   }
-  #       # }else{
-  #       #   d<-df.base.mod()
-  #       #   df.trans.mod(d)
-  #       # 
-  #       # }
-  # #       
-  # #       #message(colnames(df.trans.mod()))
+  #       
+  #       if(length(df.t.accepted()>0)){
+  #         if(grepl(input$response_var,colnames(df.t.accepted()))){
+  #           df.trans.mod(cbind(df.base.mod()%>%select(-input$response_var),df.t.accepted())%>%relocate(t.response.name(),.after = last_col()))
+  #         }else{
+  #           df.trans.mod(cbind(df.base.mod(),df.t.accepted()))
+  #         }
+  #       }else{
+  #         d<-df.base.mod()
+  #         df.trans.mod(d)
+  #         
+  #       }
+  #       
+  #       #message(colnames(df.trans.mod()))
   #     }
-  # #     
+  #     
   #   }
   # })
   # 
-  observeEvent(df.base.mod(),{
-    #message('made it into the model list observer')
-# 
-    formula_base<-paste0(input$response_var,'~.')
-    #(formula_base)
-    m<-list()
-    m[['base']]<-lm(formula_base,data=cbind(df.base.mod()%>%select(-last_col()),raw_data()%>%select(input$response_var)))
-    
-    m[['trans']]<-if(nrow(accepted.transformations$df!=0)){
-      formula_trans<-paste0(colnames(df.base.mod()%>%select(last_col())),"~.")
-      lm(formula_trans,data=df.base.mod())
-    }else{
-        'no transformations included in modeling'
-      }
-    #message(summary(m[['base']]))
-#     if(is.null(t.response.name())){
-# 
-#       t.response<-input$response_var
-# 
-#     }else{
-#       t.response<-t.response.name()
-#       #message('t.response.name:',t.response.name())
-#     }
-#     formula_trans<-paste0(t.response,'~.')
-#     #message(colnames(df.trans.mod()))
-#     m[['trans']]<-lm(formula_trans, data=df.trans.mod())
-# 
-    mod.list(m)
-#     #message(colnames(mod.list()))
-#     #message(names(mod.list()))
-  })
-
-   observeEvent(mod.list(),{
-     #printing summary base.mod
-     output$base.mod<-renderPrint(summary(mod.list()[[1]]))
-     output$base.resid<-renderPlot(ggResidpanel::resid_panel(mod.list()[[1]]))
-  })
-
-  observeEvent(mod.list(),{
-    #printing summary base.mod
-    output$trans.mod<-renderPrint(summary(mod.list()[[2]]))
-    output$trans.resid<-renderPlot(ggResidpanel::resid_panel(mod.list()[[2]]))
-  })
+  # observeEvent(df.trans.mod(),{
+  #   #message('made it into the model list observer')
+  #   
+  #   formula_base<-paste0(input$response_var,'~.')
+  #   #message(formula_base)
+  #   m<-list()
+  #   m[['base']]<-lm(formula_base,data=df.base.mod())
+  #   if(is.null(t.response.name())){
+  #     
+  #     t.response<-input$response_var
+  #     
+  #   }else{
+  #     t.response<-t.response.name()
+  #     #message('t.response.name:',t.response.name())
+  #   }
+  #   formula_trans<-paste0(t.response,'~.')
+  #   #message(colnames(df.trans.mod()))
+  #   m[['trans']]<-lm(formula_trans, data=df.trans.mod())
+  #   
+  #   mod.list(m)
+  #   #message(colnames(mod.list()))
+  #   #message(names(mod.list()))
+  # })
+  # 
+  # observeEvent(mod.list(),{
+  #   #printing summary base.mod
+  #   output$base.mod<-renderPrint(summary(mod.list()[[1]]))
+  #   
+  # })
+  # observeEvent(mod.list(),{
+  #   #plot residuals base.mod
+  #   output$base.resid<-renderPlot(ggResidpanel::resid_panel(mod.list()[[1]]))
+  # })
+  # observeEvent(mod.list(),{
+  #   #printing summary base.mod
+  #   output$trans.mod<-renderPrint(summary(mod.list()[[2]]))
+  #   
+  # })
   # observeEvent(mod.list(),{
   #   #plot residuals base.mod
   #   output$trans.resid<-renderPlot(ggResidpanel::resid_panel(mod.list()[[2]]))
@@ -731,57 +637,53 @@ server<-function(input, output, session){
   # 
   # 
   # 
-  ##OUTPUTS
-  ## data input tab
-  output$contents<-renderTable(head(raw_data()))# output for raw_data table
-  output$data_structure<-renderPrint(str(raw_data())) #structure for raw_data table
-
+  # ##OUTPUTS
+  # ## data input tab
+  # output$contents<-renderTable(head(raw_data()))# output for raw_data table
+  # output$data_structure<-renderPrint(str(raw_data())) #structure for raw_data table
   # 
   # 
   # 
-  observeEvent(input$best.mod.run,{
-    m<-mod.list()
-    df<-df.base.mod()
-    
-    regsub<-regsubsets(as.matrix(df[,-length(df)]),df[,length(df)])
-    best.summary<-summary(regsub)
-    best.mod.sum(regsub)
-    output$best.mod.summary<-renderPrint(summary(regsub))
-    #   best.summary<-summary(regsub)
+  # 
+  # observeEvent(input$best.mod.run,{
+  #   m<-mod.list()
+  #   df<-df.trans.mod()
+  #   #message(length(df))
+  #   
   #   #if(!identical(colnames(df.trans.mod()),colnames(df.base.mod()))){
   #   regsub<-regsubsets(as.matrix(df[,-length(df)]),df[,length(df)])
   #   best.summary<-summary(regsub)
   #   #best.summary<-summary(regsub)
   #   best.mod.sum(regsub)
-    output$best.mod.summary<-renderPrint(summary(regsub))
-    if(length(df[,-length(df)])>8){
-      size<-8
-    }else{
-      size<-length(df[,-length(df)])
-      #message(size)
-    }
-    output$best.submetric.plot<-renderPlot({
-      tibble(predictors = 1:size,
-             adj_R2 = best.summary$adjr2,
-             Cp = best.summary$cp,
-             BIC = best.summary$bic) %>%
-        gather(statistic, value, -predictors) %>%
-        ggplot(aes(predictors, value, color = statistic)) +
-        geom_line(show.legend = F) +
-        geom_point(show.legend = F) +
-        facet_wrap(~ statistic, scales = "free")
-    })
+  #   output$best.mod.summary<-renderPrint(summary(regsub))
+  #   if(length(df[,-length(df)])>8){
+  #     size<-8
+  #   }else{
+  #     size<-length(df[,-length(df)])
+  #     #message(size)
+  #   }
+  #   output$best.submetric.plot<-renderPlot({
+  #     tibble(predictors = 1:size,
+  #            adj_R2 = best.summary$adjr2,
+  #            Cp = best.summary$cp,
+  #            BIC = best.summary$bic) %>%
+  #       gather(statistic, value, -predictors) %>%
+  #       ggplot(aes(predictors, value, color = statistic)) +
+  #       geom_line(show.legend = F) +
+  #       geom_point(show.legend = F) +
+  #       facet_wrap(~ statistic, scales = "free")
+  #   })
   #   
   #   
-  })
+  # })
   # 
-  observeEvent(input$best.mod.run,{
-    output$best.metrics<-renderText({
-      results<-summary(best.mod.sum())
-      paste('best adjR2: ',which.max(results$adjr2),"best BIC: ",which.min(results$bic),"best Cp: ",which.min(results$cp))
-    })
-
-  })
+  # observeEvent(input$best.mod.run,{
+  #   output$best.metrics<-renderText({
+  #     results<-summary(best.mod.sum())
+  #     paste('best adjR2: ',which.max(results$adjr2),"best BIC: ",which.min(results$bic),"best Cp: ",which.min(results$cp))
+  #   })
+  #   
+  # })
   # 
   # observeEvent(input$submit.select,{
   #   m<-mod.list()
