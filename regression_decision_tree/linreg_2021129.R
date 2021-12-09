@@ -31,7 +31,7 @@ ui = fluidPage(
                             
                             checkboxGroupInput(
                               inputId = 'p_vars',
-                              label = 'select predictor variables',
+                              label = 'select response variables',
                               choices = NULL
                             )
                           ), #close sidebar panel data input tab
@@ -250,7 +250,7 @@ server<-function(input, output, session){
   }
   
   
- 
+  
   neq_nothing<-function(x){
     
     if(x!=""){
@@ -281,9 +281,9 @@ server<-function(input, output, session){
       indata[inx]<-transform_column(indata[inx],fn=t.list[1])
       indata[iny]<-transform_column(indata[iny],fn=t.list[2])
     }
-  
-    if(count(unique(indata[inx]))==2 & type=='target'){
     
+    if(count(unique(indata[inx]))==2 & type=='target'){
+      
       p <- ggplot(indata,
                   aes_q(x = xname,
                         y = yname, fill=yname))
@@ -295,8 +295,7 @@ server<-function(input, output, session){
     p <- ggplot(indata,
                 aes_q(x = xname,
                       y = yname))
-    p + geom_point()+geom_smooth(method='loess',color='blue')+geom_smooth(method='lm',color='red')+ggpubr::stat_cor(method = "pearson")
-    #> `geom_smooth()` using formula 'y ~ x'
+    p + geom_point()+geom_smooth(method='loess',color='blue')+geom_smooth(method='lm',color='red')
     
   }
   ## REACTIVE ELEMENTS
@@ -313,7 +312,7 @@ server<-function(input, output, session){
     validate(need(ext=='csv','please upload a tidy csv file'))
     
     output<-read.csv(file$datapath, header = input$header)
-    output<-janitor::clean_names(output)%>%mutate_if(is.character,as.factor)
+    output<-janitor::clean_names(output)
     output<-na.omit(output)
   })
   
@@ -338,7 +337,7 @@ server<-function(input, output, session){
     }else{
       list(input$t_type_x1,input$t_type_x2,input$t_type_r)
     }
-
+    
   })
   
   
@@ -352,7 +351,7 @@ server<-function(input, output, session){
     NULL
   })
   
- 
+  
   
   ## model tab reactive elements
   
@@ -391,7 +390,6 @@ server<-function(input, output, session){
   observeEvent(input$p_vars,{
     #update list of selected predictors
     p_selected(input$p_vars)
-    message()
     
   })
   
@@ -448,7 +446,7 @@ server<-function(input, output, session){
     
   })
   
- 
+  
   
   
   
@@ -476,21 +474,21 @@ server<-function(input, output, session){
   
   ##--COMMENTED OUT SECTION
   
- 
   
- 
-
+  
+  
+  
   observeEvent(plot.t.Listen(),{
     
     output$r_x1<-renderPlot({
       
-     
+      
       showplot1(raw_data()%>%select(c(as.character(toListen()[[1]]),input$response_var)),inx=1,iny=2, type='target')
       
       
     })
-   output$x1_x2<-renderPlot({
-        
+    output$x1_x2<-renderPlot({
+      
       
       showplot1(raw_data()%>%select(c(input$x1,input$x2)),inx=1,iny=2, type='interaction')
     })
@@ -498,20 +496,20 @@ server<-function(input, output, session){
   
   #set value of accepting transformation Listener
   observeEvent(input$acpt_t_r,{
-      toAccept(NULL)
-      toAccept(3)
-
-    })
-    observeEvent(input$acpt_t_x1,{
-      toAccept(NULL)
-      toAccept(1)
-
-    })
-    observeEvent(input$acpt_t_x2,{
-      toAccept(NULL)
-      toAccept(2)
-
-    })
+    toAccept(NULL)
+    toAccept(3)
+    
+  })
+  observeEvent(input$acpt_t_x1,{
+    toAccept(NULL)
+    toAccept(1)
+    
+  })
+  observeEvent(input$acpt_t_x2,{
+    toAccept(NULL)
+    toAccept(2)
+    
+  })
   observeEvent(toAccept(),{
     
     accepted.transformations$df<-rbind(
@@ -524,20 +522,20 @@ server<-function(input, output, session){
       ,
       c(transform.holder$variables[toAccept()],
         transform.holder$transformations[toAccept()])
-      )
+    )
     
     
-       
+    
     
     output$df.trans.stored<-renderTable({
-    colnames(accepted.transformations$df)<-c('variables','transformations')
-    if(input$response_var %in% accepted.transformations$df$variables){
-      accepted.transformations$df<-rbind(accepted.transformations$df%>%filter(variables!=input$response_var),accepted.transformations$df%>%filter(variables==input$response_var))
-    }
-    unique(accepted.transformations$df)
-     
-      })
+      colnames(accepted.transformations$df)<-c('variables','transformations')
+      if(input$response_var %in% accepted.transformations$df$variables){
+        accepted.transformations$df<-rbind(accepted.transformations$df%>%filter(variables!=input$response_var),accepted.transformations$df%>%filter(variables==input$response_var))
+      }
+      unique(accepted.transformations$df)
+      
     })
+  })
   
   # observeEvent(df.t(),{
   #   output$x1_x2<-renderPlot(showplot1(df.t(),1,2))
@@ -618,43 +616,35 @@ server<-function(input, output, session){
   # ## models observers
   # 
   #
-   observeEvent(input$tabSwitch, {
+  observeEvent(input$tabSwitch, {
     #generate table to model off of
-     if(!is.null(predictor_list())){
-     
-       if(input$tabSwitch =='Modeling'){
+    if(!is.null(predictor_list())){
+      
+      if(input$tabSwitch =='Modeling'){
         #message( nrow(accepted.transformations$df))
-         df.base<-raw_data()%>%select(p_selected(),input$response_var)
-         
-         
-         #message(colnames(transformation.df))
-         if(nrow(accepted.transformations$df)==0){
-          #transformation.df<-data.frame(raw_data()%>%select(input$response_var))
+        df.base<-raw_data()%>%select(p_selected(),input$response_var)
+        
+        #message(colnames(transformation.df))
+        if(nrow(accepted.transformations$df)==0){
+          return(df.base.mod(df.base))
           
-          
-          df.base.mod(df.base)
-           
-         }else{
-           transformation.df<-apply(unique(accepted.transformations$df)[,c('variables','transformations')],1,function(x) transform_column(column=raw_data()[x[1]],fn=x[2]))%>%bind_cols()
-           colnames(transformation.df)<-apply(unique(accepted.transformations$df)[,c('variables','transformations')],1,function(x) paste(x[2],x[1],sep = "_"))
-           message('created transformation.df')
-         
-         if(input$response_var %in% accepted.transformations$df$variables){
-           
-           df.full<-cbind(df.base%>%select(-input$response_var),transformation.df)
-           df.base.mod(df.full)
-           #message(col
-         }else{
-           df.full<-cbind(df.base,transformation.df)%>%relocate(input$response_var, .after = last_col())
-           
-           message('made it through creation of df.base.mod')
-           return(df.base.mod(df.full))
-         }
-         }
-       }
-     }
-   })
-   # 
+        }else{
+          transformation.df<-apply(unique(accepted.transformations$df)[,c('variables','transformations')],1,function(x) transform_column(column=raw_data()[x[1]],fn=x[2]))%>%bind_cols()
+          colnames(transformation.df)<-apply(unique(accepted.transformations$df)[,c('variables','transformations')],1,function(x) paste(x[2],x[1],sep = "_"))
+        }
+        
+        if(input$response_var %in% accepted.transformations$df$variables){
+          df.full<-cbind(df.base%>%select(-input$response_var),transformation.df)
+          return(df.base.mod(df.full))
+          #message(col
+        }else{
+          df.full<-cbind(df.base,transformation.df%>%relocate(input$response_var,.after = last_col()))
+          return(df.base.mod(df.full))
+        }
+      }
+    }
+  })
+  # 
   # 
   # observeEvent(input$tabSwitch, {
   #   if(!is.null(predictor_list())){
@@ -684,51 +674,46 @@ server<-function(input, output, session){
   # 
   observeEvent(df.base.mod(),{
     #message('made it into the model list observer')
-# 
-    local.df<-df.base.mod()
-    #message(colnames(df.base.mod()[ncol(df.base.mod())]))
+    # 
+    formula_base<-paste0(input$response_var,'~.')
     #(formula_base)
-    formula_base<-paste0(colnames(df.base.mod()%>%select(last_col())),"~.")
-    #message(formula_base)
     m<-list()
-    base.vars<-colnames(df.base.mod()%>%select(c(p_selected(),colnames(df.base.mod()[ncol(df.base.mod())]))))
-    #message(paste(base.vars, sep=" "))
-    m[['base']]<-lm(formula_base,data=df.base.mod()%>%select(all_of(base.vars)))
-     
-      m[['trans']]<-if(nrow(accepted.transformations$df!=0)){
-      
-        lm(formula_base,data=df.base.mod())
-      
-     }else{
-       lm(formula_base,data=df.base.mod()%>%select(all_of(base.vars)))
-       }
-
+    m[['base']]<-lm(formula_base,data=cbind(df.base.mod()%>%select(-last_col()),raw_data()%>%select(input$response_var)))
+    
+    m[['trans']]<-if(nrow(accepted.transformations$df!=0)){
+      formula_trans<-paste0(colnames(df.base.mod()%>%select(last_col())),"~.")
+      lm(formula_trans,data=df.base.mod())
+    }else{
+      'no transformations included in modeling'
+    }
+    #message(summary(m[['base']]))
+    #     if(is.null(t.response.name())){
+    # 
+    #       t.response<-input$response_var
+    # 
+    #     }else{
+    #       t.response<-t.response.name()
+    #       #message('t.response.name:',t.response.name())
+    #     }
+    #     formula_trans<-paste0(t.response,'~.')
+    #     #message(colnames(df.trans.mod()))
+    #     m[['trans']]<-lm(formula_trans, data=df.trans.mod())
+    # 
     mod.list(m)
-
+    #     #message(colnames(mod.list()))
+    #     #message(names(mod.list()))
   })
-
-   observeEvent(mod.list(),{
-     #printing summary base.mod
-     
-     output$base.mod<-renderPrint(summary(mod.list()[['base']]))
-     
+  
+  observeEvent(mod.list(),{
+    #printing summary base.mod
+    output$base.mod<-renderPrint(summary(mod.list()[[1]]))
+    output$base.resid<-renderPlot(ggResidpanel::resid_panel(mod.list()[[1]]))
   })
-   observeEvent(mod.list(),{
-     
-     #output$base.resid<-renderPlot(ggResidpanel::resid_panel(mod.list()[[1]]))
-     output$base.resid<-renderPlot({
-       par(mfrow = c(2,2))
-       plot(mod.list()[[1]])
-     })
-   })
-
+  
   observeEvent(mod.list(),{
     #printing summary base.mod
     output$trans.mod<-renderPrint(summary(mod.list()[[2]]))
-    output$trans.resid<-renderPlot({
-      par(mfrow = c(2,2))
-      plot(mod.list()[[2]])
-    })
+    output$trans.resid<-renderPlot(ggResidpanel::resid_panel(mod.list()[[2]]))
   })
   # observeEvent(mod.list(),{
   #   #plot residuals base.mod
@@ -750,7 +735,7 @@ server<-function(input, output, session){
   ## data input tab
   output$contents<-renderTable(head(raw_data()))# output for raw_data table
   output$data_structure<-renderPrint(str(raw_data())) #structure for raw_data table
-
+  
   # 
   # 
   # 
@@ -758,26 +743,25 @@ server<-function(input, output, session){
     m<-mod.list()
     df<-df.base.mod()
     
-    regsub<-regsubsets(as.matrix(df[,-length(df)]),df[,length(df)], nvmax=8)
+    regsub<-regsubsets(as.matrix(df[,-length(df)]),df[,length(df)])
     best.summary<-summary(regsub)
     best.mod.sum(regsub)
     output$best.mod.summary<-renderPrint(summary(regsub))
     #   best.summary<-summary(regsub)
-  #   #if(!identical(colnames(df.trans.mod()),colnames(df.base.mod()))){
-  #   regsub<-regsubsets(as.matrix(df[,-length(df)]),df[,length(df)])
-  #   best.summary<-summary(regsub)
-  #   #best.summary<-summary(regsub)
-  #   best.mod.sum(regsub)
+    #   #if(!identical(colnames(df.trans.mod()),colnames(df.base.mod()))){
+    #   regsub<-regsubsets(as.matrix(df[,-length(df)]),df[,length(df)])
+    #   best.summary<-summary(regsub)
+    #   #best.summary<-summary(regsub)
+    #   best.mod.sum(regsub)
     output$best.mod.summary<-renderPrint(summary(regsub))
-    # if(length(df[,-length(df)])>8){
-    #   size<-8
-    # }else{
-    #   size<-length(df[,-length(df)])
-    #   #message(size)
-    # }
-    
+    if(length(df[,-length(df)])>8){
+      size<-8
+    }else{
+      size<-length(df[,-length(df)])
+      #message(size)
+    }
     output$best.submetric.plot<-renderPlot({
-      tibble(predictors = 1:length(best.summary$adjr2),
+      tibble(predictors = 1:size,
              adj_R2 = best.summary$adjr2,
              Cp = best.summary$cp,
              BIC = best.summary$bic) %>%
@@ -786,10 +770,9 @@ server<-function(input, output, session){
         geom_line(show.legend = F) +
         geom_point(show.legend = F) +
         facet_wrap(~ statistic, scales = "free")
-      
     })
-  #   
-  #   
+    #   
+    #   
   })
   # 
   observeEvent(input$best.mod.run,{
@@ -797,36 +780,39 @@ server<-function(input, output, session){
       results<-summary(best.mod.sum())
       paste('best adjR2: ',which.max(results$adjr2),"best BIC: ",which.min(results$bic),"best Cp: ",which.min(results$cp))
     })
-
-  })
-  # 
-  observeEvent(input$submit.select,{
-    m<-mod.list()
-    regsub<-best.mod.sum()
-    best.sub.var.list<-as.list(names(coef(regsub,input$size.best)))[-1]
-    message(best.sub.var.list)
-    best.selected<-paste(unlist(best.sub.var.list),collapse="+")
-    t.response<-colnames(df.base.mod()%>%select(last_col()))
-  
-    best.mod.arg<-paste0(t.response,'~',best.selected)
-    message(print(colnames(df.base.mod())))
-    m[['best.mod']]<-lm(best.mod.arg,data=df.base.mod())
-    mod.list(m)
     
-    output$select.mod<-renderPrint(summary(m[['best.mod']]))
-    output$select.resid<-renderPlot({
-      par(mfrow = c(2,2))
-      plot(mod.list()[[3]])
-    })
   })
   # 
-  observeEvent(input$submit.select,{
-    m.list<-as.list(mod.list())
-    AICs<-do.call(AIC,unname(m.list))$AIC
-    adjr2<-lapply(X=m.list,
-                  FUN = function(x) unlist(summary(x)$adj.r.squared))
-    output$modselect.table<-renderTable(data.frame(Models=names(m.list),AIC=round(AICs,2),R2 = round(unlist(unname(adjr2)),2)))
-  })
+  # observeEvent(input$submit.select,{
+  #   m<-mod.list()
+  #   regsub<-best.mod.sum()
+  #   best.sub.var.list<-as.list(names(coef(regsub,input$size.best)))[-1]
+  #   #message(best.sub.var.list)
+  #   best.selected<-paste(unlist(best.sub.var.list),collapse="+")
+  #   if(is.null(t.response.name())){
+  #     
+  #     t.response<-input$response_var
+  #     
+  #   }else{
+  #     t.response<-t.response.name()
+  #     #message('t.response.name:',t.response.name())
+  #   }
+  #   
+  #   best.mod.arg<-paste0(t.response,'~',best.selected)
+  #   
+  #   m[['best.mod']]<-lm(best.mod.arg,data=df.trans.mod())
+  #   mod.list(m)
+  #   output$select.mod<-renderPrint(summary(m[['best.mod']]))
+  #   output$select.resid<-renderPlot(ggResidpanel::resid_panel(mod.list()[[3]]))
+  # })
+  # 
+  # observeEvent(input$submit.select,{
+  #   m.list<-as.list(mod.list())
+  #   AICs<-do.call(AIC,unname(m.list))$AIC
+  #   adjr2<-lapply(X=m.list,
+  #                 FUN = function(x) unlist(summary(x)$adj.r.squared))
+  #   output$modselect.table<-renderTable(data.frame(Models=names(m.list),AIC=round(AICs,2),R2 = round(unlist(unname(adjr2)),2)))
+  # })
   # 
   # 
   # 
