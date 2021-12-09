@@ -31,7 +31,7 @@ ui = fluidPage(
                             
                             checkboxGroupInput(
                               inputId = 'p_vars',
-                              label = 'select response variables',
+                              label = 'select predictor variables',
                               choices = NULL
                             )
                           ), #close sidebar panel data input tab
@@ -295,7 +295,8 @@ server<-function(input, output, session){
     p <- ggplot(indata,
                 aes_q(x = xname,
                       y = yname))
-    p + geom_point()+geom_smooth(method='loess',color='blue')+geom_smooth(method='lm',color='red')
+    p + geom_point()+geom_smooth(method='loess',color='blue')+geom_smooth(method='lm',color='red')+ggpubr::stat_cor(method = "pearson")
+    #> `geom_smooth()` using formula 'y ~ x'
     
   }
   ## REACTIVE ELEMENTS
@@ -623,7 +624,7 @@ server<-function(input, output, session){
        if(input$tabSwitch =='Modeling'){
         #message( nrow(accepted.transformations$df))
          df.base<-raw_data()%>%select(p_selected(),input$response_var)
-         
+         message('created df.base locally')
          #message(colnames(transformation.df))
          if(nrow(accepted.transformations$df)==0){
           return(df.base.mod(df.base))
@@ -631,6 +632,7 @@ server<-function(input, output, session){
          }else{
            transformation.df<-apply(unique(accepted.transformations$df)[,c('variables','transformations')],1,function(x) transform_column(column=raw_data()[x[1]],fn=x[2]))%>%bind_cols()
            colnames(transformation.df)<-apply(unique(accepted.transformations$df)[,c('variables','transformations')],1,function(x) paste(x[2],x[1],sep = "_"))
+           message('created transformation.df')
          }
          
          if(input$response_var %in% accepted.transformations$df$variables){
@@ -638,7 +640,8 @@ server<-function(input, output, session){
            return(df.base.mod(df.full))
            #message(col
          }else{
-           df.full<-cbind(df.base,transformation.df%>%relocate(input$response_var,.after = last_col()))
+           df.full<-cbind(df.base,transformation.df)%>%relocate(input$response_var,.after = last_col())
+           message('made it through creation of df.base.mod')
            return(df.base.mod(df.full))
          }
        }
@@ -675,33 +678,25 @@ server<-function(input, output, session){
   observeEvent(df.base.mod(),{
     #message('made it into the model list observer')
 # 
-    formula_base<-paste0(input$response_var,'~.')
+    message('is it failing here?')
     #(formula_base)
+    formula_base<-paste0(colnames(df.base.mod()%>%select(last_col())),"~.")
+    message('or here')
     m<-list()
-    m[['base']]<-lm(formula_base,data=cbind(df.base.mod()%>%select(-last_col()),raw_data()%>%select(input$response_var)))
-    
-    m[['trans']]<-if(nrow(accepted.transformations$df!=0)){
-      formula_trans<-paste0(colnames(df.base.mod()%>%select(last_col())),"~.")
-      lm(formula_trans,data=df.base.mod())
-    }else{
-        'no transformations included in modeling'
-      }
-    #message(summary(m[['base']]))
-#     if(is.null(t.response.name())){
-# 
-#       t.response<-input$response_var
-# 
-#     }else{
-#       t.response<-t.response.name()
-#       #message('t.response.name:',t.response.name())
-#     }
-#     formula_trans<-paste0(t.response,'~.')
-#     #message(colnames(df.trans.mod()))
-#     m[['trans']]<-lm(formula_trans, data=df.trans.mod())
-# 
+    base.vars<-colnames(df.base.mod()%>%select(c(p_selected(),last_col())))
+    message('couldn"t be here?')
+    m[['base']]<-lm(formula_base,data=df.base.mod()%>%select(base.vars))
+     message(nrow(accepted.transformations$df!=0))
+      m[['trans']]<-if(nrow(accepted.transformations$df!=0)){
+      
+        lm(formula_base,data=df.base.mod())
+      
+     }else{
+         'no transformations included in modeling'
+       }
+
     mod.list(m)
-#     #message(colnames(mod.list()))
-#     #message(names(mod.list()))
+
   })
 
    observeEvent(mod.list(),{
