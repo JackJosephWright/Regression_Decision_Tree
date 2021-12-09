@@ -757,8 +757,12 @@ server<-function(input, output, session){
   observeEvent(input$best.mod.run,{
     m<-mod.list()
     df<-df.base.mod()
-    
-    regsub<-regsubsets(as.matrix(df[,-length(df)]),df[,length(df)], nvmax=8)
+    terms<-colnames(mod.list()[[2]]$model)
+    response<-paste(terms[2:length(terms)],collapse='+')
+    formula<-paste0(terms[1],'~',response)
+    print(formula)
+    #regsub<-regsubsets(as.matrix(df[,-length(df)]),df[,length(df)], nvmax=8)
+    regsub<-regsubsets(as.formula(formula),method='exhaustive', data=df)
     best.summary<-summary(regsub)
     best.mod.sum(regsub)
     output$best.mod.summary<-renderPrint(summary(regsub))
