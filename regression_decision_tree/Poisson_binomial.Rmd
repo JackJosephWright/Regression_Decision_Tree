@@ -1,0 +1,62 @@
+---
+title: "Binomial Regression"
+output: html_document
+date: '2022-03-25'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Conditions for Binomial vs Poisonn 
+
+1.
+
+count is some number out of a possible total. *model this with a binomial* BUT for small success probabilities and LARGE totals, Poisson is a good approximation. 
+
+EX:
+
+modeling incidence of rare forms of cancer. Number of people affected is a small proportion of the population given a geographical area.
+
+if $\mu=np$ while $n\rightarrow\infty$ then B(n,p) is well approximated by $Pois(\mu)$
+
+NOTE:
+
+for a small p, $logit(p)\approx log(p)$
+
+so use of Poisson with a log link is comparable to the binomial with a logit link
+
+2.
+
+Probability of occcurrence of an event in a given time interval is proportional to the length of that time interval and independent of the occurence of other events.
+
+Number of events in any specified time interval will be Poisson distributed
+
+EX:
+
+modeling the number of incoming telephone calls to a service center or the number of earthquakes.
+
+rate of incoming telephone calls is likely to vary with time of day, while the timing of earthquakes are unlikely to be completely independent. However it might be a good approximation
+
+
+
+## Poisson Example
+
+
+
+The dataset discoveries lists the numbers of great inventions 
+and scientific discoveries in each year from 1860 to 1959. Has the 
+discovery rate remained constant over time?
+
+
+```{r}
+data(discoveries)
+
+
+
+year=1860:1959
+g=glm(discoveries ~ year, family="poisson")
+summary(g)$coef['year','Pr(>|z|)']
+```
+
