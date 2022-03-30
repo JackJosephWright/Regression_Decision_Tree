@@ -1,0 +1,110 @@
+---
+title: "Binomial Regression"
+output: html_document
+date: '2022-03-30'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Binomial Regression Model
+
+For when response variable  is binomially distributed (probabilities of k successes on n trials.)
+
+for binomial response we need 2 sets of info about the response
+
+y:
+ successes
+n:
+  number of trials
+  
+OR
+n-y:
+  number of failures
+
+
+## Example: Challenger Disaster
+
+This is a dataset examining the failure of the O-rings (important component of a space shuttle) under certain conditions 
+
+```{r}
+library(tidyverse)
+library(faraway)
+```
+
+
+### Linking function in Binomial Regression
+
+The link function is how the predictors are related to the response variable. 
+
+In binomial regression, the three common link functions are *Logit*, *Probit* and *Complimentary Log-Log*
+
+They can be used in the GLM model to define how the response fits the predictor. 
+
+
+#### Logit link model
+
+```{r}
+logitmod<-glm(cbind(damage,6-damage)~temp, family=binomial(), data=orings)
+summary(logitmod)
+```
+
+
+#### Probit link model
+
+```{r}
+probitmod<-glm(cbind(damage,6-damage)~temp, family=binomial(link=probit),orings)
+summary(probitmod)
+```
+
+
+
+Note how the difference in the link functions changes the dynamics of the fit to the data
+
+
+
+```{r}
+plot (damage/6 ~ temp, orings, xlim=c(25,85),
+ylim=c(0,1),
+ xlab="Temperature", ylab="Prob of damage")
+x <- seq(25,85,1)
+lines(x,ilogit(11.6630−0.2162*x))
+lines(x, pnorm(5.5915-0.1058*x), lty=2) 
+
+```
+
+
+## Inference
+
+Much like Poisson or Logistic regression. Models are compared to a *saturated model* (i.e. a perfect fit to the data) as opposed to a null model. This changes the way we interpret our p-values
+
+
+```{r}
+pchisq(deviance(logitmod), df.residual(logitmod),lower=FALSE)
+```
+recall:
+
+H_0: our model (less complex)
+
+H_A: saturated model (more complex)
+
+since the P-value is HIGH, we say that it fits the data well
+
+
+
+### Confidence Intervals 
+
+Another method of interpreting our model. If the confidence interval includes zero, then you could reject the model and build something else
+
+
+```{r}
+library(MASS)
+confint(logitmod)
+```
+
+
+
+### Odds
+
