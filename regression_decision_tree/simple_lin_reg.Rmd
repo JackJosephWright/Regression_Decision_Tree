@@ -12,35 +12,25 @@ library(tidyverse)
 
 
 ## Requirements for simple linear regression
-Response Requirements
-1.
+Response Requirements:
 
-`n(response==1)`
-2.
-`response!=binary & response!=count`
- IF `response==binary`
- use *simple_logistic_regression.Rmd*
- IF `response==count`
- use *simple_count_regression.Rmd*
+1. `n(response==1)`
+2. `response!=binary & response!=count`
+  * IF `response==binary`
+        - use *simple_logistic_regression.Rmd*
+ * IF `response==count`
+        - use *simple_count_regression.Rmd*
 3.
   IF `response` is an average value at a level of `predictor`, and the standard devaition can be calculated, 
       use *wls_given_variance.Rmd* 
 
 Predictor Requirements
 
-1.
-`n(predictor==1)`
-  IF 
-  `n(predictor!=1)` 
-   use *multivariate_lin_regression.Rmd*
-2.
-`predictor!=factor & predictor!=binary`
-  IF 
-  `predictor==factor` 
-   use *simple_lin_categorical_predictor.Rmd*
-  IF
-  `predictor==binary`
-  use *simple_lin_dummy.Rmd*
+1. `n(predictor==1)`
+  * IF `n(predictor!=1)` use *multivariate_lin_regression.Rmd*
+2. `predictor!=factor & predictor!=binary`
+  * IF `predictor==factor` use *simple_lin_categorical_predictor.Rmd*
+  * IF `predictor==binary`use *simple_lin_dummy.Rmd*
 
 
 `if (response==count)`{
@@ -52,12 +42,12 @@ Predictor Requirements
 
 FUNCTIONS:
 
-GGally::ggpairs(data)
--check correlation
+`GGally::ggpairs(data)`
+- check correlation
 
 corrplot::corrplot(cor(data))
 
-## Patterns to look for
+### Patterns to look for
 
 see *common_transformation_patterns.Rmd*
 
@@ -104,16 +94,17 @@ if `lmtest::bptest(model)==H_A` perform Weighted least squares
 ### Examine residuals
 
 ```{r}
-resid_panel(model_list[['base']])
+library(ggResidpanel)
+ggResidpanel::resid_panel(model_list[['base']])
 ```
 
 
 
-## use powertransform to get the optimal power to raise the response to, and run model again
+use powerTransform to get the optimal power to raise the response to, and run model again
 
 
 ```{r}
-(p1<-powerTransform(df_exp))
+(p1<-car::powerTransform(df_exp+.001))
 
 
 model_list[['transform']]<-lm(y^p1$lambda[[2]]~x,data = df_exp)

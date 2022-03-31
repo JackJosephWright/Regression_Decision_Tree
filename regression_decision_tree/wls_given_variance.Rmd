@@ -1,7 +1,6 @@
 ---
 title: "linear_weighted_least_squares|variance across predictor"
 author: "Jack Wright"
-date: "11/10/2021"
 output: html_document
 ---
 
@@ -23,6 +22,22 @@ OR `heteroscedasticity_test(simple_lin_reg)=FAIL`
 `response`= mean across level of `predictor` 
 
 `sd(response_i|predictor_i)=TRUE`
+
+## cleaningwtd data
+```{r}
+clean<-read.table(here('data','cleaningwtd.txt'),header=TRUE)
+head(clean)
+```
+
+Note that the number of rooms cleaned is a mean, and the standard deviations of rooms cleaned per crew amount is given. 
+
+
+```{r}
+ggplot(clean, aes(x=Crews, y=Rooms))+geom_point()+geom_smooth(method='lm')
+```
+
+Note how the variance increases as the number of crews increases.
+
 
 
 ## Build model list

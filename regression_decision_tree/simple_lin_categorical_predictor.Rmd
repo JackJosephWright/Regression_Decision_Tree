@@ -46,6 +46,7 @@ head(res)
 ## Make Model
 
 ```{r}
+model_anova<-lm(salary~rank, data = Salaries)
 summary(model_anova)
 ```
 
@@ -71,6 +72,6 @@ confint(model_anova)
 
 
 ```{r}
-resid_panel(model_anova)
+ggResidpanel::resid_panel(model_anova)
 ```
 

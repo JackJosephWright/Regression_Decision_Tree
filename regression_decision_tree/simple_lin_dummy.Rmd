@@ -11,23 +11,25 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Requirements for simple linear regression with dummy variable
 
-## response variable
+response variable
 
 `is.continuous(dependent_variable)`
 
-## predictor variable
+predictor variable
 
 `is.binary(predictor_variable)`
 
-```{r}
+```{r message= FALSE, warning=FALSE}
 library(tidyverse)
 library(here)
 library(AER)
 ```
-CASchools$STR <- CASchools$students/CASchools$teachers 
+
 ```{r}
+data('CASchools')
 df<-CASchools
 df<-df%>%dplyr::mutate(STR=as.numeric(students)/as.numeric(teachers))
+## Create binary predictor with threshold
 df<-df%>%mutate(D=STR<20)%>%mutate(score=(read+math)/2)
 ```
 
@@ -68,7 +70,7 @@ Estimate is not a slope, but a  difference in group averages (DTRUE vs DFALSE)
 ## Check Vailidity of Model
 
 ```{r}
-resid_panel(m.list[['lm.dummy']])
+ggResidpanel::resid_panel(m.list[['lm.dummy']])
 ```
 Since the predictor is binary, we are only looking at the QQ and the Density vs Residuals , and maybe the Cook's distance for leverage. 
 

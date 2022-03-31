@@ -1,7 +1,6 @@
 ---
 title: "simple_logistic_regression"
 author: "Jack Wright"
-date: "11/10/2021"
 output: html_document
 ---
 
@@ -18,6 +17,10 @@ library(tidyverse)
 
 
 $m=n(observation~per~row)$
+
+This means that each row in your data frame has more than one observation. 
+
+
 
 Additional requirements for simple logistic regression
 
@@ -43,6 +46,7 @@ MichelinFood[6,]
 
 ## Build model
 
+Use `family = binomial` to generate a logistic regression.
 
 ```{r}
 glm.list=list()

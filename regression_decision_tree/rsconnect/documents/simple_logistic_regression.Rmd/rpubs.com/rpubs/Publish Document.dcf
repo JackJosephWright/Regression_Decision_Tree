@@ -1,0 +1,11 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/844801/0e9df432d0c84dd285594c529ec4bbb1
+bundleId: https://api.rpubs.com/api/v1/document/844801/0e9df432d0c84dd285594c529ec4bbb1
+url: http://rpubs.com/JackJWright/844801
+when: 1648049289.44498
+lastSyncTime: 1648049289.44498

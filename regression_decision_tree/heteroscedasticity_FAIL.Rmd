@@ -32,6 +32,7 @@ wls.list[['model']] <- lm(score ~ hours, data = df)
 define weights to use
 
 ```{r}
+model<-wls.list[['model']]
 wt <- 1 / lm(abs(model$residuals) ~ model$fitted.values)$fitted.values^2
 ```
 

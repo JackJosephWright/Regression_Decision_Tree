@@ -11,7 +11,6 @@
 
 <meta name="author" content="Jack Wright" />
 
-<meta name="date" content="2021-11-10" />
 
 <title>simple_logistic_regression</title>
 
@@ -167,7 +166,6 @@ pre code {
 
 <h1 class="title toc-ignore">simple_logistic_regression</h1>
 <h4 class="author">Jack Wright</h4>
-<h4 class="date">11/10/2021</h4>
 
 </div>
 
@@ -175,6 +173,7 @@ pre code {
 <div id="simple-logistic-regression" class="section level2">
 <h2>Simple Logistic Regression</h2>
 <p><span class="math inline">\(m=n(observation~per~row)\)</span></p>
+<p>This means that each row in your data frame has more than one observation.</p>
 <p>Additional requirements for simple logistic regression</p>
 <p><code>m!=1</code> if <code>m==1</code> USE <em>simple_binary_logistic_regression.Rmd</em></p>
 <pre class="r"><code>MichelinFood&lt;-read.table(here(&#39;data&#39;,&#39;MichelinFood.txt&#39;),header = TRUE)</code></pre>
@@ -186,6 +185,7 @@ pre code {
 </div>
 <div id="build-model" class="section level2">
 <h2>Build model</h2>
+<p>Use <code>family = binomial</code> to generate a logistic regression.</p>
 <pre class="r"><code>glm.list=list()
 glm.list[[&#39;glm.base&#39;]]&lt;-glm(formula = cbind(InMichelin,NotInMichelin)~Food, family = binomial, data=MichelinFood)
 

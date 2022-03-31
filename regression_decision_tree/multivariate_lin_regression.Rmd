@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Requirements for multivariate regression
 
-```{r}
+```{r message = FALSE, warning = FALSE}
 library(tidyverse)
 library(here)
 library(car)
@@ -76,7 +76,7 @@ Types of covariance:
 
 **unrelated regression lines**
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(dlookr)
 dlookr::plot_correlate(nyc)
 ```
@@ -106,7 +106,7 @@ summary(lm.list[["lm.base"]])
 
 see *transformations.Rmd* for interpretation of residual plots for transformations
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(regclass)
 regclass::VIF(lm.list[['lm.base']])
 
@@ -125,7 +125,7 @@ ggplot(nyc,aes(x=Decor,y=Price))+geom_point()+geom_smooth(method='loess',se=FALS
 ```
 ## Check for heteroscedasticity
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(lmtest)
 lmtest::bptest(lm.list[['lm.base']])
 ```
